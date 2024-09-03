@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+  "rust",
+  "python",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = "Lukas Turcani <lukasturcani93@gmail.com>"
+
+[profile.release]
+lto = true
+code-gen-units = 1

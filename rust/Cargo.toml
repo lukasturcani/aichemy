@@ -1,0 +1,6 @@
+[package]
+name = "aichemy"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
