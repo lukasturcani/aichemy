@@ -4,3 +4,5 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+home = "0.5.9"
+reqwest = "0.12.7"
