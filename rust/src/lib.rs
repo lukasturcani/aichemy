@@ -141,7 +141,7 @@ pub mod nmr {
 
             pub fn experiments(&self, query: ExperimentQuery) -> Experiments {
                 Experiments {
-                    items: todo!(),
+                    inner: todo!(),
                     client: &self,
                 }
             }
