@@ -152,7 +152,7 @@ pub mod nmr {
         }
 
         pub struct Experiments<'client> {
-            pub items: Vec<Experiment>,
+            pub inner: Vec<Experiment>,
             client: &'client Client,
         }
         pub struct Datasets(pub Vec<Dataset>);
