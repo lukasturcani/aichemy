@@ -1,19 +1,17 @@
-use aichemy::nmr::{self, NmrNomadClient};
+use aichemy::nmr::nomad_nmr::Client;
 
 #[test]
-fn download() {
-    let client = NmrNomadClient::connect("");
-    for spectrum in client.spectra(Filter {}) {
-        spectrum.download();
-        let peaks = bruker::PickPicks::new().threshold(0.1).peaks(spectrum);
-        let peaks = nmr::bruker::pick_peaks(path, nmr::bruker::PickPeakOptions {});
-        db.insert(spectrum, peaks);
-    }
-    let paths = client.download_spectra(Filter {});
-    nmr::bruker::pick_peaks();
-    polars::read_database();
-    let df = spectra.peaks();
-    nmr::peaks(some_file);
-    nmr::peaks(datasets.to_df().filter(col("users").eq("lukas")));
-    train_model();
+fn download() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::login("http://localhost:8080", "admin", "12345")?;
+    println!("{:?}", client.auth_token);
+    Ok(())
+    // let experiments = client.experiments(ExperimentQuery::default());
+    // expriments.download_stream().write();
+    // let paths = client.download_spectra(Filter {});
+    // nmr::bruker::pick_peaks();
+    // polars::read_database();
+    // let df = spectra.peaks();
+    // nmr::peaks(some_file);
+    // nmr::peaks(datasets.to_df().filter(col("users").eq("lukas")));
+    // train_model();
 }
