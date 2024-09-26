@@ -34,50 +34,104 @@ pub mod nmr {
         }
 
         #[derive(Debug, Clone)]
+        pub struct AuthToken {
+            pub token: String,
+        }
+
+        impl AuthToken {
+            pub fn expired(&self) -> bool {
+                todo!()
+            }
+        }
+
+        #[derive(Debug, Clone)]
         pub struct Client {
             client: reqwest::blocking::Client,
             pub url: Url,
-            pub auth_token: String,
+            pub username: String,
+            pub password: String,
+            pub auth_token: AuthToken,
         }
 
         pub struct ExperimentQuery;
         pub struct DatasetQuery;
 
-        #[derive(Deserialize)]
+        #[derive(Debug, Deserialize)]
         struct AuthResponse {
+            #[serde(rename = "expiresIn")]
+            pub expires_in: String,
             pub token: String,
         }
 
         impl Client {
             pub fn login(
                 url: impl IntoUrl,
-                username: impl AsRef<str>,
-                password: impl AsRef<str>,
+                username: impl Into<String>,
+                password: impl Into<String>,
             ) -> Result<Self, Error> {
+                let username = username.into();
+                let password = password.into();
                 let url = url
                     .into_url()
                     .map_err(|source| Error::InvalidUrl { source })?;
                 let login_url = url.join("auth/login").unwrap();
                 let client = reqwest::blocking::Client::new();
-                let auth_token = client
+                let response = client
                     .post(login_url)
                     .json(&json!({
-                        "username": username.as_ref(),
-                        "password": password.as_ref(),
+                        "username": username,
+                        "password": password,
                     }))
                     .send()
                     .map_err(|source| Error::Request { source })?
                     .error_for_status()
-                    .map_err(|source| Error::Request { source })?
-                    .json::<AuthResponse>()
+                    .map_err(|source| Error::Request { source })?;
+                let datetime = response
+                    .headers()
+                    .get("date")
                     .unwrap()
-                    .token;
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                let response: AuthResponse = response.json::<AuthResponse>().unwrap();
+                println!("{:?}", datetime);
                 Ok(Self {
                     client,
                     url,
-                    auth_token,
+                    username,
+                    password,
+                    auth_token: AuthToken {
+                        token: response.token,
+                    },
                 })
             }
+
+            pub fn auth(&mut self) -> Result<&mut Self, Error> {
+                let login_url = self.url.join("auth/login").unwrap();
+                let response = self
+                    .client
+                    .post(login_url)
+                    .json(&json!({
+                        "username": self.username,
+                        "password": self.password,
+                    }))
+                    .send()
+                    .map_err(|source| Error::Request { source })?
+                    .error_for_status()
+                    .map_err(|source| Error::Request { source })?;
+                let datetime = response
+                    .headers()
+                    .get("date")
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string();
+                self.auth_token = AuthToken {
+                    token: response.json::<AuthResponse>().unwrap().token,
+                };
+                Ok(self)
+            }
+
             pub fn connect(url: Url) -> Self {
                 todo!()
             }

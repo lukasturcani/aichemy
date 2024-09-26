@@ -2,7 +2,9 @@ use aichemy::nmr::nomad_nmr::Client;
 
 #[test]
 fn download() -> Result<(), Box<dyn std::error::Error>> {
-    let client = Client::login("http://localhost:8080", "admin", "12345")?;
+    let mut client = Client::login("http://localhost:8080", "admin", "12345")?;
+    println!("{:?}", client.auth_token);
+    client.auth()?;
     println!("{:?}", client.auth_token);
     Ok(())
     // let experiments = client.experiments(ExperimentQuery::default());
