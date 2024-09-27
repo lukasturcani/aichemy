@@ -17,7 +17,7 @@ pub mod nmr {
 
     pub mod nomad_nmr {
 
-        use chrono::{DateTime, Duration, Utc};
+        use chrono::{DateTime, Duration, NaiveDate, Utc};
         use reqwest::{IntoUrl, Url};
         use serde::Deserialize;
         use serde_json::json;
@@ -55,7 +55,26 @@ pub mod nmr {
             pub auth_token: AuthToken,
         }
 
-        pub struct ExperimentQuery;
+        #[derive(Debug, Clone)]
+        pub struct DateRange {
+            start: NaiveDate,
+            end: NaiveDate,
+        }
+
+        #[derive(Debug, Clone, Default)]
+        pub struct ExperimentQuery {
+            instrument_id: Option<String>,
+            solvent: Option<String>,
+            parameter_set: Option<String>,
+            title: Option<String>,
+            date_range: Option<DateRange>,
+            group_id: Option<String>,
+            user_id: Option<String>,
+            manual: bool,
+            pulse_program: Option<String>,
+            dataset_name: Option<String>,
+            legacy_data: bool,
+        }
         pub struct DatasetQuery;
 
         #[derive(Debug, Deserialize)]
