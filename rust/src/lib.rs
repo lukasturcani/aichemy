@@ -82,37 +82,37 @@ pub mod nmr {
         #[derive(Debug, Clone, Default, Serialize)]
         pub struct ExperimentQuery {
             #[serde(skip_serializing_if = "Option::is_none")]
-            instrument_id: Option<String>,
+            pub instrument_id: Option<String>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            solvent: Option<String>,
+            pub solvent: Option<String>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            parameter_set: Option<String>,
+            pub parameter_set: Option<String>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            title: Option<String>,
+            pub title: Option<String>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            date_range: Option<DateRange>,
+            pub date_range: Option<DateRange>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            group_id: Option<String>,
+            pub group_id: Option<String>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            user_id: Option<String>,
+            pub user_id: Option<String>,
 
             #[serde(skip_serializing_if = "is_false")]
-            manual: bool,
+            pub manual: bool,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            pulse_program: Option<String>,
+            pub pulse_program: Option<String>,
 
             #[serde(skip_serializing_if = "Option::is_none")]
-            dataset_name: Option<String>,
+            pub dataset_name: Option<String>,
 
             #[serde(skip_serializing_if = "is_false")]
-            legacy_data: bool,
+            pub legacy_data: bool,
         }
         pub struct DatasetQuery;
 
