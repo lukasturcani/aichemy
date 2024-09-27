@@ -17,6 +17,7 @@ pub mod nmr {
 
     pub mod nomad_nmr {
 
+        use chrono::NaiveDateTime;
         use reqwest::{IntoUrl, Url};
         use serde::Deserialize;
         use serde_json::json;
@@ -35,6 +36,7 @@ pub mod nmr {
 
         #[derive(Debug, Clone)]
         pub struct AuthToken {
+            pub expiry_time: NaiveDateTime,
             pub token: String,
         }
 
@@ -59,7 +61,7 @@ pub mod nmr {
         #[derive(Debug, Deserialize)]
         struct AuthResponse {
             #[serde(rename = "expiresIn")]
-            pub expires_in: String,
+            pub expires_in: u32,
             pub token: String,
         }
 
@@ -91,10 +93,8 @@ pub mod nmr {
                     .get("date")
                     .unwrap()
                     .to_str()
-                    .unwrap()
-                    .to_string();
-                let response: AuthResponse = response.json::<AuthResponse>().unwrap();
-                println!("{:?}", datetime);
+                    .unwrap();
+                let response = response.json::<AuthResponse>().unwrap();
                 Ok(Self {
                     client,
                     url,
@@ -102,6 +102,7 @@ pub mod nmr {
                     password,
                     auth_token: AuthToken {
                         token: response.token,
+                        expiry_time:
                     },
                 })
             }
