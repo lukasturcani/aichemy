@@ -17,7 +17,7 @@ pub mod nmr {
 
     pub mod nomad_nmr {
 
-        use chrono::{Duration, NaiveDateTime};
+        use chrono::{DateTime, Duration, Utc};
         use reqwest::{IntoUrl, Url};
         use serde::Deserialize;
         use serde_json::json;
@@ -36,7 +36,7 @@ pub mod nmr {
 
         #[derive(Debug, Clone)]
         pub struct AuthToken {
-            pub expiry_time: NaiveDateTime,
+            pub expiry_time: DateTime<Utc>,
             pub token: String,
         }
 
@@ -88,9 +88,9 @@ pub mod nmr {
                     .map_err(|source| Error::Request { source })?
                     .error_for_status()
                     .map_err(|source| Error::Request { source })?;
-                let mut expiry_time = NaiveDateTime::parse_from_str(
-                    response.headers().get("date").unwrap().to_str().unwrap(),
-                    "",
+                let mut expiry_time = DateTime::parse_from_str(
+                    &response.headers().get("date").unwrap().to_str().unwrap()[5..],
+                    "%d %b %Y %T %Z",
                 )
                 .unwrap();
                 let response = response.json::<AuthResponse>().unwrap();
@@ -120,9 +120,9 @@ pub mod nmr {
                     .map_err(|source| Error::Request { source })?
                     .error_for_status()
                     .map_err(|source| Error::Request { source })?;
-                let mut expiry_time = NaiveDateTime::parse_from_str(
-                    response.headers().get("date").unwrap().to_str().unwrap(),
-                    "",
+                let mut expiry_time = DateTime::parse_from_str(
+                    &response.headers().get("date").unwrap().to_str().unwrap()[5..],
+                    "%d %b %Y %T %Z",
                 )
                 .unwrap();
                 let response = response.json::<AuthResponse>().unwrap();
