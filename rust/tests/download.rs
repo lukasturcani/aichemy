@@ -1,13 +1,10 @@
-use aichemy::nmr::nomad_nmr::Client;
+use aichemy::nmr::nomad_nmr::{Client, ExperimentQuery};
 
 #[test]
 fn download() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = Client::login("http://localhost:8080", "admin", "12345")?;
-    println!("{:?}", client.auth_token);
-    client.auth()?;
-    println!("{:?}", client.auth_token);
+    let experiments = client.experiments(ExperimentQuery::default());
     Ok(())
-    // let experiments = client.experiments(ExperimentQuery::default());
     // expriments.download_stream().write();
     // let paths = client.download_spectra(Filter {});
     // nmr::bruker::pick_peaks();

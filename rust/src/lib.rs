@@ -19,9 +19,9 @@ pub mod nmr {
 
         use chrono::{DateTime, Duration, NaiveDate, Utc};
         use reqwest::{IntoUrl, Url};
-        use serde::Deserialize;
+        use serde::{Deserialize, Serialize, Serializer};
         use serde_json::json;
-        use std::path::Path;
+        use std::{borrow::Borrow, path::Path};
         use thiserror::Error;
 
         #[derive(Error, Debug)]
@@ -61,18 +61,57 @@ pub mod nmr {
             end: NaiveDate,
         }
 
-        #[derive(Debug, Clone, Default)]
+        impl Serialize for DateRange {
+            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+            where
+                S: Serializer,
+            {
+                let s = format!(
+                    "{},{}",
+                    self.start.format("%Y-%m-%d"),
+                    self.end.format("%Y-%m-%d")
+                );
+                serializer.serialize_str(&s)
+            }
+        }
+
+        fn is_false(b: &bool) -> bool {
+            !b
+        }
+
+        #[derive(Debug, Clone, Default, Serialize)]
         pub struct ExperimentQuery {
+            #[serde(skip_serializing_if = "Option::is_none")]
             instrument_id: Option<String>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             solvent: Option<String>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             parameter_set: Option<String>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             title: Option<String>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             date_range: Option<DateRange>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             group_id: Option<String>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             user_id: Option<String>,
+
+            #[serde(skip_serializing_if = "is_false")]
             manual: bool,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             pulse_program: Option<String>,
+
+            #[serde(skip_serializing_if = "Option::is_none")]
             dataset_name: Option<String>,
+
+            #[serde(skip_serializing_if = "is_false")]
             legacy_data: bool,
         }
         pub struct DatasetQuery;
@@ -162,11 +201,14 @@ pub mod nmr {
                 todo!()
             }
 
-            pub fn experiments(&self, query: ExperimentQuery) -> Experiments {
-                Experiments {
-                    inner: todo!(),
-                    client: &self,
-                }
+            pub fn experiments(&self, query: impl Borrow<ExperimentQuery>) -> Experiments {
+                let query = query.borrow();
+                let request = self
+                    .client
+                    .get(self.url.join("api/search/experiments").unwrap())
+                    .query(&query);
+                println!("{:?}", request);
+                todo!()
             }
 
             pub fn datasets(&self, query: DatasetQuery) -> Datasets {
