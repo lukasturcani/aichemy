@@ -17,7 +17,7 @@ pub mod nmr {
 
     pub mod nomad_nmr {
 
-        use chrono::NaiveDateTime;
+        use chrono::{Duration, NaiveDateTime};
         use reqwest::{IntoUrl, Url};
         use serde::Deserialize;
         use serde_json::json;
@@ -61,7 +61,7 @@ pub mod nmr {
         #[derive(Debug, Deserialize)]
         struct AuthResponse {
             #[serde(rename = "expiresIn")]
-            pub expires_in: u32,
+            pub expires_in: i64,
             pub token: String,
         }
 
@@ -88,13 +88,13 @@ pub mod nmr {
                     .map_err(|source| Error::Request { source })?
                     .error_for_status()
                     .map_err(|source| Error::Request { source })?;
-                let datetime = response
-                    .headers()
-                    .get("date")
-                    .unwrap()
-                    .to_str()
-                    .unwrap();
+                let mut expiry_time = NaiveDateTime::parse_from_str(
+                    response.headers().get("date").unwrap().to_str().unwrap(),
+                    "",
+                )
+                .unwrap();
                 let response = response.json::<AuthResponse>().unwrap();
+                expiry_time += Duration::seconds(response.expires_in);
                 Ok(Self {
                     client,
                     url,
@@ -102,7 +102,7 @@ pub mod nmr {
                     password,
                     auth_token: AuthToken {
                         token: response.token,
-                        expiry_time:
+                        expiry_time,
                     },
                 })
             }
@@ -120,15 +120,16 @@ pub mod nmr {
                     .map_err(|source| Error::Request { source })?
                     .error_for_status()
                     .map_err(|source| Error::Request { source })?;
-                let datetime = response
-                    .headers()
-                    .get("date")
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string();
+                let mut expiry_time = NaiveDateTime::parse_from_str(
+                    response.headers().get("date").unwrap().to_str().unwrap(),
+                    "",
+                )
+                .unwrap();
+                let response = response.json::<AuthResponse>().unwrap();
+                expiry_time += Duration::seconds(response.expires_in);
                 self.auth_token = AuthToken {
-                    token: response.json::<AuthResponse>().unwrap().token,
+                    token: response.token,
+                    expiry_time,
                 };
                 Ok(self)
             }
