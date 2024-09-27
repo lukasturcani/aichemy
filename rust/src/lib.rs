@@ -146,9 +146,8 @@ pub mod nmr {
                     .map_err(|source| Error::Request { source })?
                     .error_for_status()
                     .map_err(|source| Error::Request { source })?;
-                let mut expiry_time = DateTime::parse_from_str(
+                let mut expiry_time = DateTime::parse_from_rfc2822(
                     &response.headers().get("date").unwrap().to_str().unwrap()[5..],
-                    "%d %b %Y %T %Z",
                 )
                 .unwrap()
                 .into();
@@ -179,9 +178,8 @@ pub mod nmr {
                     .map_err(|source| Error::Request { source })?
                     .error_for_status()
                     .map_err(|source| Error::Request { source })?;
-                let mut expiry_time = DateTime::parse_from_str(
+                let mut expiry_time = DateTime::parse_from_rfc2822(
                     &response.headers().get("date").unwrap().to_str().unwrap()[5..],
-                    "%d %b %Y %T %Z",
                 )
                 .unwrap()
                 .into();
@@ -212,7 +210,6 @@ pub mod nmr {
                     .query(&query)
                     .send()
                     .map_err(|source| Error::Request { source })?;
-                println!("{:?}", response);
                 todo!()
             }
 
