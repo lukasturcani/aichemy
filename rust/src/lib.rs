@@ -201,13 +201,18 @@ pub mod nmr {
                 todo!()
             }
 
-            pub fn experiments(&self, query: impl Borrow<ExperimentQuery>) -> Experiments {
+            pub fn experiments(
+                &self,
+                query: impl Borrow<ExperimentQuery>,
+            ) -> Result<Experiments, Error> {
                 let query = query.borrow();
-                let request = self
+                let response = self
                     .client
                     .get(self.url.join("api/search/experiments").unwrap())
-                    .query(&query);
-                println!("{:?}", request);
+                    .query(&query)
+                    .send()
+                    .map_err(|source| Error::Request { source })?;
+                println!("{:?}", response);
                 todo!()
             }
 
