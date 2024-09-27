@@ -92,7 +92,8 @@ pub mod nmr {
                     &response.headers().get("date").unwrap().to_str().unwrap()[5..],
                     "%d %b %Y %T %Z",
                 )
-                .unwrap();
+                .unwrap()
+                .into();
                 let response = response.json::<AuthResponse>().unwrap();
                 expiry_time += Duration::seconds(response.expires_in);
                 Ok(Self {
@@ -124,7 +125,8 @@ pub mod nmr {
                     &response.headers().get("date").unwrap().to_str().unwrap()[5..],
                     "%d %b %Y %T %Z",
                 )
-                .unwrap();
+                .unwrap()
+                .into();
                 let response = response.json::<AuthResponse>().unwrap();
                 expiry_time += Duration::seconds(response.expires_in);
                 self.auth_token = AuthToken {
