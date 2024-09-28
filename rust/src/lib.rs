@@ -57,8 +57,8 @@ pub mod nmr {
 
         #[derive(Debug, Clone)]
         pub struct DateRange {
-            start: NaiveDate,
-            end: NaiveDate,
+            pub start: NaiveDate,
+            pub end: NaiveDate,
         }
 
         impl DateRange {
@@ -145,6 +145,8 @@ pub mod nmr {
             pub token: String,
         }
 
+        struct ExperimentResponse {}
+
         impl Client {
             pub fn login(
                 url: impl IntoUrl,
@@ -230,9 +232,9 @@ pub mod nmr {
                     .client
                     .get(self.url.join("search/experiments").unwrap())
                     .query(&query.to_query())
+                    .bearer_auth(self.auth_token.token.clone())
                     .send()
                     .map_err(|source| Error::Request { source })?;
-                println!("{:#?}", response);
                 todo!()
             }
 
