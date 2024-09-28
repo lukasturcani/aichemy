@@ -19,7 +19,7 @@ pub mod nmr {
 
         use chrono::{DateTime, Duration, NaiveDate, Utc};
         use reqwest::{IntoUrl, Url};
-        use serde::{Deserialize, Serialize, Serializer};
+        use serde::Deserialize;
         use serde_json::json;
         use std::{borrow::Borrow, path::Path};
         use thiserror::Error;
@@ -61,58 +61,80 @@ pub mod nmr {
             end: NaiveDate,
         }
 
-        impl Serialize for DateRange {
-            fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-            where
-                S: Serializer,
-            {
-                let s = format!(
+        impl ToString for DateRange {
+            fn to_string(&self) -> String {
+                format!(
                     "{},{}",
                     self.start.format("%Y-%m-%d"),
                     self.end.format("%Y-%m-%d")
-                );
-                serializer.serialize_str(&s)
+                )
             }
         }
 
-        fn is_false(b: &bool) -> bool {
-            !b
+        #[derive(Debug, Clone, Default)]
+        pub enum ExperimentType {
+            #[default]
+            Auto,
+            Manual {
+                pulse_program: String,
+            },
         }
 
-        #[derive(Debug, Clone, Default, Serialize)]
+        #[derive(Debug, Clone, Default)]
         pub struct ExperimentQuery {
-            #[serde(skip_serializing_if = "Option::is_none")]
             pub instrument_id: Option<String>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
             pub solvent: Option<String>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
             pub parameter_set: Option<String>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
             pub title: Option<String>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
             pub date_range: Option<DateRange>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
             pub group_id: Option<String>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
             pub user_id: Option<String>,
-
-            #[serde(skip_serializing_if = "is_false")]
-            pub manual: bool,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
-            pub pulse_program: Option<String>,
-
-            #[serde(skip_serializing_if = "Option::is_none")]
+            pub experiment_type: Option<ExperimentType>,
             pub dataset_name: Option<String>,
-
-            #[serde(skip_serializing_if = "is_false")]
             pub legacy_data: bool,
+        }
+
+        impl ExperimentQuery {
+            fn to_query(&self) -> Vec<(String, String)> {
+                let mut query = vec![];
+                if let Some(instrument_id) = &self.instrument_id {
+                    query.push(("instrumentId".to_string(), instrument_id.clone()));
+                }
+                if let Some(solvent) = &self.solvent {
+                    query.push(("solvent".to_string(), solvent.clone()));
+                }
+                if let Some(parameter_set) = &self.parameter_set {
+                    query.push(("paramSet".to_string(), parameter_set.clone()));
+                }
+                if let Some(title) = &self.title {
+                    query.push(("title".to_string(), title.clone()));
+                }
+                if let Some(date_range) = &self.date_range {
+                    query.push(("dateRange".to_string(), date_range.to_string()));
+                }
+                if let Some(group_id) = &self.group_id {
+                    query.push(("groupId".to_string(), group_id.clone()));
+                }
+                if let Some(user_id) = &self.user_id {
+                    query.push(("userId".to_string(), user_id.clone()));
+                }
+                match &self.experiment_type {
+                    Some(ExperimentType::Auto) => {
+                        query.push(("dataType".to_string(), "auto".to_string()));
+                    }
+                    Some(ExperimentType::Manual { pulse_program }) => {
+                        query.push(("pulseProgram".to_string(), pulse_program.clone()));
+                    }
+                    None => {}
+                }
+                if let Some(dataset_name) = &self.dataset_name {
+                    query.push(("datasetName".to_string(), dataset_name.clone()));
+                }
+                if self.legacy_data {
+                    query.push(("legacyData".to_string(), "true".to_string()));
+                }
+                query
+            }
         }
         pub struct DatasetQuery;
 
@@ -206,10 +228,11 @@ pub mod nmr {
                 let query = query.borrow();
                 let response = self
                     .client
-                    .get(self.url.join("api/search/experiments").unwrap())
-                    .query(&query)
+                    .get(self.url.join("search/experiments").unwrap())
+                    .query(&query.to_query())
                     .send()
                     .map_err(|source| Error::Request { source })?;
+                println!("{:#?}", response);
                 todo!()
             }
 
