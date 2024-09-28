@@ -4,9 +4,8 @@ use aichemy::nmr::nomad_nmr::{Client, ExperimentQuery};
 fn download() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = Client::login("http://localhost:8080", "admin", "12345")?;
     println!("{:#?}", client.auth_token);
-    let experiments = client.experiments(ExperimentQuery {
-        ..Default::default()
-    })?;
+    let experiments = client.experiments(ExperimentQuery::default())?;
+    println!("{:#?}", experiments);
     Ok(())
     // expriments.download_stream().write();
     // let paths = client.download_spectra(Filter {});

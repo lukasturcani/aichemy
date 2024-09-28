@@ -72,15 +72,6 @@ pub mod nmr {
         }
 
         #[derive(Debug, Clone, Default)]
-        pub enum ExperimentType {
-            #[default]
-            Auto,
-            Manual {
-                pulse_program: String,
-            },
-        }
-
-        #[derive(Debug, Clone, Default)]
         pub struct ExperimentQuery {
             pub instrument_id: Option<String>,
             pub solvent: Option<String>,
@@ -89,14 +80,13 @@ pub mod nmr {
             pub date_range: Option<DateRange>,
             pub group_id: Option<String>,
             pub user_id: Option<String>,
-            pub experiment_type: Option<ExperimentType>,
             pub dataset_name: Option<String>,
             pub legacy_data: Option<bool>,
         }
 
         impl ExperimentQuery {
             fn to_query(&self) -> Vec<(String, String)> {
-                let mut query = vec![];
+                let mut query = vec![("dataType".to_string(), "auto".to_string())];
                 if let Some(instrument_id) = &self.instrument_id {
                     query.push(("instrumentId".to_string(), instrument_id.clone()));
                 }
@@ -118,15 +108,6 @@ pub mod nmr {
                 if let Some(user_id) = &self.user_id {
                     query.push(("userId".to_string(), user_id.clone()));
                 }
-                match &self.experiment_type {
-                    Some(ExperimentType::Auto) => {
-                        query.push(("dataType".to_string(), "auto".to_string()));
-                    }
-                    Some(ExperimentType::Manual { pulse_program }) => {
-                        query.push(("pulseProgram".to_string(), pulse_program.clone()));
-                    }
-                    None => {}
-                }
                 if let Some(dataset_name) = &self.dataset_name {
                     query.push(("datasetName".to_string(), dataset_name.clone()));
                 }
@@ -145,7 +126,26 @@ pub mod nmr {
             pub token: String,
         }
 
-        struct ExperimentResponse {}
+        #[derive(Debug, Deserialize)]
+        struct ExperimentSearchResponse {
+            data: Vec<ExperimentData>,
+            total: usize,
+            truncated: bool,
+        }
+
+        #[derive(Debug, Deserialize, Clone)]
+        pub struct InstrumentData {
+            pub id: String,
+            pub name: String,
+        }
+
+        #[derive(Debug, Deserialize, Clone)]
+        pub struct ExperimentData {
+            #[serde(rename = "expId")]
+            pub experiment_id: String,
+
+            pub instrument: InstrumentData,
+        }
 
         impl Client {
             pub fn login(
@@ -234,8 +234,17 @@ pub mod nmr {
                     .query(&query.to_query())
                     .bearer_auth(self.auth_token.token.clone())
                     .send()
+                    .map_err(|source| Error::Request { source })?
+                    .json::<ExperimentSearchResponse>()
                     .map_err(|source| Error::Request { source })?;
-                todo!()
+                Ok(Experiments {
+                    inner: response
+                        .data
+                        .into_iter()
+                        .map(|data| Experiment { data, client: self })
+                        .collect(),
+                    client: self,
+                })
             }
 
             pub fn datasets(&self, query: DatasetQuery) -> Datasets {
@@ -243,8 +252,9 @@ pub mod nmr {
             }
         }
 
+        #[derive(Debug, Clone)]
         pub struct Experiments<'client> {
-            pub inner: Vec<Experiment>,
+            pub inner: Vec<Experiment<'client>>,
             client: &'client Client,
         }
         pub struct Datasets(pub Vec<Dataset>);
@@ -253,9 +263,13 @@ pub mod nmr {
             pub fn get(&self) {}
         }
 
-        pub struct Experiment {}
+        #[derive(Debug, Clone)]
+        pub struct Experiment<'client> {
+            pub data: ExperimentData,
+            client: &'client Client,
+        }
 
-        impl Experiment {
+        impl<'client> Experiment<'client> {
             pub fn download(&self, path: impl AsRef<Path>) {}
         }
 
