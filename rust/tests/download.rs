@@ -9,6 +9,7 @@ fn download() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     let experiments = client.experiments(ExperimentQuery::default())?;
     let result = experiments.get();
+    println!("{:#?}", result);
     Ok(())
     // expriments.download_stream().write();
     // let paths = client.download_spectra(Filter {});

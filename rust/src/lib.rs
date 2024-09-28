@@ -72,33 +72,33 @@ pub mod nmr {
         }
 
         impl ExperimentQuery {
-            fn to_query(&self) -> Vec<(String, String)> {
+            fn to_query(self) -> Vec<(String, String)> {
                 let mut query = vec![("dataType".to_string(), "auto".to_string())];
-                if let Some(instrument_id) = &self.instrument_id {
-                    query.push(("instrumentId".to_string(), instrument_id.clone()));
+                if let Some(instrument_id) = self.instrument_id {
+                    query.push(("instrumentId".to_string(), instrument_id));
                 }
-                if let Some(solvent) = &self.solvent {
-                    query.push(("solvent".to_string(), solvent.clone()));
+                if let Some(solvent) = self.solvent {
+                    query.push(("solvent".to_string(), solvent));
                 }
-                if let Some(parameter_set) = &self.parameter_set {
-                    query.push(("paramSet".to_string(), parameter_set.clone()));
+                if let Some(parameter_set) = self.parameter_set {
+                    query.push(("paramSet".to_string(), parameter_set));
                 }
-                if let Some(title) = &self.title {
-                    query.push(("title".to_string(), title.clone()));
+                if let Some(title) = self.title {
+                    query.push(("title".to_string(), title));
                 }
-                if let Some(date_range) = &self.date_range {
+                if let Some(date_range) = self.date_range {
                     query.push(("dateRange".to_string(), date_range.to_query()));
                 }
-                if let Some(group_id) = &self.group_id {
-                    query.push(("groupId".to_string(), group_id.clone()));
+                if let Some(group_id) = self.group_id {
+                    query.push(("groupId".to_string(), group_id));
                 }
-                if let Some(user_id) = &self.user_id {
-                    query.push(("userId".to_string(), user_id.clone()));
+                if let Some(user_id) = self.user_id {
+                    query.push(("userId".to_string(), user_id));
                 }
-                if let Some(dataset_name) = &self.dataset_name {
-                    query.push(("datasetName".to_string(), dataset_name.clone()));
+                if let Some(dataset_name) = self.dataset_name {
+                    query.push(("datasetName".to_string(), dataset_name));
                 }
-                if let Some(legacy_data) = &self.legacy_data {
+                if let Some(legacy_data) = self.legacy_data {
                     query.push(("legacyData".to_string(), legacy_data.to_string()));
                 }
                 query
@@ -270,11 +270,7 @@ pub mod nmr {
                 todo!()
             }
 
-            pub fn experiments(
-                &self,
-                query: impl Borrow<ExperimentQuery>,
-            ) -> Result<Experiments, Error> {
-                let query = query.borrow();
+            pub fn experiments(&self, query: ExperimentQuery) -> Result<Experiments, Error> {
                 let response = self
                     .inner
                     .get(self.url.join("api/search/experiments").unwrap())
@@ -306,21 +302,23 @@ pub mod nmr {
         }
 
         impl<'client> Experiments<'client> {
-            pub fn get(&self) -> Result<(), Error> {
+            pub fn get(self) -> Result<(), Error> {
                 let response = self
                     .client
                     .inner
                     .get(self.client.url.join("api/data/exps").unwrap())
-                    .query(
-                        &self
-                            .inner
-                            .iter()
-                            .map(|experiment| &experiment.data.key)
-                            .collect::<Vec<_>>(),
-                    )
+                    .query(&[(
+                        "exps",
+                        self.inner
+                            .into_iter()
+                            .map(|experiment| experiment.data.key)
+                            .collect::<Vec<_>>()
+                            .join(","),
+                    )])
+                    .bearer_auth(self.client.auth_token.token.clone())
                     .send()
                     .map_err(|source| Error::Request { source })?;
-                println!("{:#?}", response);
+                println!("{:#?}", response.text());
                 Ok(())
             }
         }
