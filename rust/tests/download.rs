@@ -8,8 +8,8 @@ fn download() -> Result<(), Box<dyn std::error::Error>> {
         std::env::var("NOMAD_NMR_PASS").unwrap(),
     )?;
     let experiments = client.experiments(ExperimentQuery::default())?;
-    let result = experiments.get();
-    println!("{:#?}", result);
+    let result = experiments.get()?;
+    std::fs::write("/home/lt912/experiments.zip", result)?;
     Ok(())
     // expriments.download_stream().write();
     // let paths = client.download_spectra(Filter {});

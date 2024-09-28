@@ -4,11 +4,12 @@ pub mod nmr {
 
     pub mod nomad_nmr {
 
+        use bytes::Bytes;
         use chrono::{DateTime, Duration, NaiveDate, Utc};
         use reqwest::{IntoUrl, Url};
         use serde::{Deserialize, Deserializer};
         use serde_json::json;
-        use std::{borrow::Borrow, path::Path};
+        use std::path::Path;
         use thiserror::Error;
 
         #[derive(Error, Debug)]
@@ -278,6 +279,8 @@ pub mod nmr {
                     .bearer_auth(self.auth_token.token.clone())
                     .send()
                     .map_err(|source| Error::Request { source })?
+                    .error_for_status()
+                    .map_err(|source| Error::Request { source })?
                     .json::<ExperimentSearchResponse>()
                     .map_err(|source| Error::Request { source })?;
                 Ok(Experiments {
@@ -302,24 +305,30 @@ pub mod nmr {
         }
 
         impl<'client> Experiments<'client> {
-            pub fn get(self) -> Result<(), Error> {
-                let response = self
-                    .client
+            pub fn get(self) -> Result<Bytes, Error> {
+                self.client
                     .inner
                     .get(self.client.url.join("api/data/exps").unwrap())
-                    .query(&[(
-                        "exps",
-                        self.inner
-                            .into_iter()
-                            .map(|experiment| experiment.data.key)
-                            .collect::<Vec<_>>()
-                            .join(","),
-                    )])
+                    .query(&[
+                        (
+                            "exps",
+                            self.inner
+                                .into_iter()
+                                .flat_map(|experiment| {
+                                    experiment.data.runs.into_iter().map(|run| run.key)
+                                })
+                                .collect::<Vec<_>>()
+                                .join(","),
+                        ),
+                        ("dataType", "auto".into()),
+                    ])
                     .bearer_auth(self.client.auth_token.token.clone())
                     .send()
-                    .map_err(|source| Error::Request { source })?;
-                println!("{:#?}", response.text());
-                Ok(())
+                    .map_err(|source| Error::Request { source })?
+                    .error_for_status()
+                    .map_err(|source| Error::Request { source })?
+                    .bytes()
+                    .map_err(|source| Error::Request { source })
             }
         }
 
