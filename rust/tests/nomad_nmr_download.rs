@@ -1,7 +1,7 @@
 use aichemy::nmr::nomad_nmr::{Client, ExperimentQuery};
 
 #[test]
-fn download() -> Result<(), Box<dyn std::error::Error>> {
+fn download_all() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::login(
         "http://aichemy-nmr.ch.ic.ac.uk",
         "admin",
