@@ -35,7 +35,7 @@ pub mod nmr {
 
         #[derive(Debug, Clone)]
         pub struct Client {
-            client: reqwest::blocking::Client,
+            pub inner: reqwest::blocking::Client,
             pub url: Url,
             pub username: String,
             pub password: String,
@@ -225,7 +225,7 @@ pub mod nmr {
                 let response = response.json::<AuthResponse>().unwrap();
                 expiry_time += Duration::seconds(response.expires_in);
                 Ok(Self {
-                    client,
+                    inner: client,
                     url,
                     username,
                     password,
@@ -239,7 +239,7 @@ pub mod nmr {
             pub fn auth(&mut self) -> Result<&mut Self, Error> {
                 let login_url = self.url.join("api/auth/login").unwrap();
                 let response = self
-                    .client
+                    .inner
                     .post(login_url)
                     .json(&json!({
                         "username": self.username,
@@ -276,7 +276,7 @@ pub mod nmr {
             ) -> Result<Experiments, Error> {
                 let query = query.borrow();
                 let response = self
-                    .client
+                    .inner
                     .get(self.url.join("api/search/experiments").unwrap())
                     .query(&query.to_query())
                     .bearer_auth(self.auth_token.token.clone())
@@ -302,11 +302,27 @@ pub mod nmr {
         #[derive(Debug, Clone)]
         pub struct Experiments<'client> {
             pub inner: Vec<Experiment<'client>>,
-            client: &'client Client,
+            pub client: &'client Client,
         }
 
         impl<'client> Experiments<'client> {
-            pub fn get(&self) {}
+            pub fn get(&self) -> Result<(), Error> {
+                let response = self
+                    .client
+                    .inner
+                    .get(self.client.url.join("api/data/exps").unwrap())
+                    .query(
+                        &self
+                            .inner
+                            .iter()
+                            .map(|experiment| &experiment.data.key)
+                            .collect::<Vec<_>>(),
+                    )
+                    .send()
+                    .map_err(|source| Error::Request { source })?;
+                println!("{:#?}", response);
+                Ok(())
+            }
         }
 
         pub struct Datasets(pub Vec<Dataset>);
@@ -314,7 +330,7 @@ pub mod nmr {
         #[derive(Debug, Clone)]
         pub struct Experiment<'client> {
             pub data: ExperimentData,
-            client: &'client Client,
+            pub client: &'client Client,
         }
 
         impl<'client> Experiment<'client> {
