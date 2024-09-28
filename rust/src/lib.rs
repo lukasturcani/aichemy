@@ -73,7 +73,7 @@ pub mod nmr {
         }
 
         impl ExperimentQuery {
-            fn to_query(self) -> Vec<(String, String)> {
+            fn into_query(self) -> Vec<(String, String)> {
                 let mut query = vec![("dataType".to_string(), "auto".to_string())];
                 if let Some(instrument_id) = self.instrument_id {
                     query.push(("instrumentId".to_string(), instrument_id));
@@ -275,7 +275,7 @@ pub mod nmr {
                 let response = self
                     .inner
                     .get(self.url.join("api/search/experiments").unwrap())
-                    .query(&query.to_query())
+                    .query(&query.into_query())
                     .bearer_auth(self.auth_token.token.clone())
                     .send()
                     .map_err(|source| Error::Request { source })?
