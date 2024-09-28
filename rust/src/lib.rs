@@ -91,7 +91,7 @@ pub mod nmr {
             pub user_id: Option<String>,
             pub experiment_type: Option<ExperimentType>,
             pub dataset_name: Option<String>,
-            pub legacy_data: bool,
+            pub legacy_data: Option<bool>,
         }
 
         impl ExperimentQuery {
@@ -130,8 +130,8 @@ pub mod nmr {
                 if let Some(dataset_name) = &self.dataset_name {
                     query.push(("datasetName".to_string(), dataset_name.clone()));
                 }
-                if self.legacy_data {
-                    query.push(("legacyData".to_string(), "true".to_string()));
+                if let Some(legacy_data) = &self.legacy_data {
+                    query.push(("legacyData".to_string(), legacy_data.to_string()));
                 }
                 query
             }
