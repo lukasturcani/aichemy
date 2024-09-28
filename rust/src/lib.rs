@@ -140,11 +140,28 @@ pub mod nmr {
         }
 
         #[derive(Debug, Deserialize, Clone)]
-        pub struct ExperimentData {
-            #[serde(rename = "expId")]
-            pub experiment_id: String,
+        pub struct UserData {
+            pub id: String,
+            pub username: String,
+        }
 
+        #[derive(Debug, Deserialize, Clone)]
+        pub struct GroupData {
+            pub id: String,
+            pub name: String,
+        }
+
+        #[derive(Debug, Deserialize, Clone)]
+        pub struct ExperimentData {
+            pub key: String,
+            pub solvent: String,
             pub instrument: InstrumentData,
+            pub user: UserData,
+            pub group: GroupData,
+            pub title: String,
+
+            #[serde(rename = "datasetName")]
+            pub dataset_name: String,
         }
 
         impl Client {
