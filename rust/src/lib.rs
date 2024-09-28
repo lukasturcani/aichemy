@@ -6,7 +6,7 @@ pub mod nmr {
 
         use chrono::{DateTime, Duration, NaiveDate, Utc};
         use reqwest::{IntoUrl, Url};
-        use serde::Deserialize;
+        use serde::{Deserialize, Deserializer};
         use serde_json::json;
         use std::{borrow::Borrow, path::Path};
         use thiserror::Error;
@@ -138,17 +138,52 @@ pub mod nmr {
             pub name: String,
         }
 
+        fn deserialize_datetime<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let s = String::deserialize(deserializer)?;
+            DateTime::parse_from_rfc3339(&s)
+                .map_err(serde::de::Error::custom)
+                .map(|dt| dt.into())
+        }
+
         #[derive(Debug, Deserialize, Clone)]
-        pub struct ExperimentData {
+        pub struct ExperimentRunData {
             pub key: String,
-            pub solvent: String,
-            pub instrument: InstrumentData,
-            pub user: UserData,
-            pub group: GroupData,
+            pub parameters: Option<String>,
             pub title: String,
 
             #[serde(rename = "datasetName")]
             pub dataset_name: String,
+
+            #[serde(rename = "expNo")]
+            pub experiment_number: String,
+
+            #[serde(rename = "parameterSet")]
+            pub parameter_set: String,
+
+            #[serde(rename = "archivedAt", deserialize_with = "deserialize_datetime")]
+            pub archived_at: DateTime<Utc>,
+        }
+
+        #[derive(Debug, Deserialize, Clone)]
+        pub struct ExperimentData {
+            pub instrument: InstrumentData,
+            pub user: UserData,
+            pub group: GroupData,
+            pub key: String,
+            pub solvent: String,
+            pub title: String,
+
+            #[serde(rename = "datasetName")]
+            pub dataset_name: String,
+
+            #[serde(rename = "submittedAt", deserialize_with = "deserialize_datetime")]
+            pub submitted_at: DateTime<Utc>,
+
+            #[serde(rename = "exps")]
+            pub runs: Vec<ExperimentRunData>,
         }
 
         impl Client {
