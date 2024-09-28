@@ -61,8 +61,8 @@ pub mod nmr {
             end: NaiveDate,
         }
 
-        impl ToString for DateRange {
-            fn to_string(&self) -> String {
+        impl DateRange {
+            fn to_query(&self) -> String {
                 format!(
                     "{},{}",
                     self.start.format("%Y-%m-%d"),
@@ -110,7 +110,7 @@ pub mod nmr {
                     query.push(("title".to_string(), title.clone()));
                 }
                 if let Some(date_range) = &self.date_range {
-                    query.push(("dateRange".to_string(), date_range.to_string()));
+                    query.push(("dateRange".to_string(), date_range.to_query()));
                 }
                 if let Some(group_id) = &self.group_id {
                     query.push(("groupId".to_string(), group_id.clone()));

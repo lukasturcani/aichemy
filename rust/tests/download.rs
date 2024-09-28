@@ -5,7 +5,6 @@ fn download() -> Result<(), Box<dyn std::error::Error>> {
     let mut client = Client::login("http://localhost:8080", "admin", "12345")?;
     println!("{:#?}", client.auth_token);
     let experiments = client.experiments(ExperimentQuery {
-        title: Some("rkt".to_string()),
         ..Default::default()
     })?;
     Ok(())
