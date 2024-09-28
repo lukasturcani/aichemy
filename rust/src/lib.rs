@@ -277,7 +277,7 @@ pub mod nmr {
                 let query = query.borrow();
                 let response = self
                     .client
-                    .get(self.url.join("search/experiments").unwrap())
+                    .get(self.url.join("api/search/experiments").unwrap())
                     .query(&query.to_query())
                     .bearer_auth(self.auth_token.token.clone())
                     .send()
