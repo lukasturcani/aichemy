@@ -2,7 +2,11 @@ use aichemy::nmr::nomad_nmr::{Client, ExperimentQuery};
 
 #[test]
 fn download() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = Client::login("http://localhost:8080", "admin", "12345")?;
+    let client = Client::login(
+        "http://aichemy-nmr.ch.ic.ac.uk",
+        "admin",
+        std::env::var("NOMAD_NMR_PASS").unwrap(),
+    )?;
     let experiments = client.experiments(ExperimentQuery::default())?;
     println!(
         "{:#?}",

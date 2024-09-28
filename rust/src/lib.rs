@@ -106,9 +106,17 @@ pub mod nmr {
         }
         pub struct DatasetQuery;
 
+        fn deserialize_expires_in<'de, D>(deserializer: D) -> Result<i64, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let s = String::deserialize(deserializer)?;
+            s.parse().map_err(serde::de::Error::custom)
+        }
+
         #[derive(Debug, Deserialize)]
         struct AuthResponse {
-            #[serde(rename = "expiresIn")]
+            #[serde(rename = "expiresIn", deserialize_with = "deserialize_expires_in")]
             pub expires_in: i64,
             pub token: String,
         }
@@ -197,7 +205,7 @@ pub mod nmr {
                 let url = url
                     .into_url()
                     .map_err(|source| Error::InvalidUrl { source })?;
-                let login_url = url.join("auth/login").unwrap();
+                let login_url = url.join("api/auth/login").unwrap();
                 let client = reqwest::blocking::Client::new();
                 let response = client
                     .post(login_url)
@@ -229,7 +237,7 @@ pub mod nmr {
             }
 
             pub fn auth(&mut self) -> Result<&mut Self, Error> {
-                let login_url = self.url.join("auth/login").unwrap();
+                let login_url = self.url.join("api/auth/login").unwrap();
                 let response = self
                     .client
                     .post(login_url)
