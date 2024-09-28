@@ -296,11 +296,12 @@ pub mod nmr {
             pub inner: Vec<Experiment<'client>>,
             client: &'client Client,
         }
-        pub struct Datasets(pub Vec<Dataset>);
 
         impl<'client> Experiments<'client> {
             pub fn get(&self) {}
         }
+
+        pub struct Datasets(pub Vec<Dataset>);
 
         #[derive(Debug, Clone)]
         pub struct Experiment<'client> {
