@@ -8,15 +8,6 @@ fn download() -> Result<(), Box<dyn std::error::Error>> {
         std::env::var("NOMAD_NMR_PASS").unwrap(),
     )?;
     let experiments = client.experiments(ExperimentQuery::default())?;
-    let result = experiments.get()?;
-    std::fs::write("/home/lt912/experiments.zip", result)?;
+    std::fs::write("/home/lt912/experiments.zip", experiments.get()?)?;
     Ok(())
-    // expriments.download_stream().write();
-    // let paths = client.download_spectra(Filter {});
-    // nmr::bruker::pick_peaks();
-    // polars::read_database();
-    // let df = spectra.peaks();
-    // nmr::peaks(some_file);
-    // nmr::peaks(datasets.to_df().filter(col("users").eq("lukas")));
-    // train_model();
 }
