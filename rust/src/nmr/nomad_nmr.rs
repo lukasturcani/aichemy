@@ -112,16 +112,16 @@ where
 }
 
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
-pub struct AutoExperimentId(String);
+pub struct AutoExperimentId(pub String);
 
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
-pub struct InstrumentId(String);
+pub struct InstrumentId(pub String);
 
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
-pub struct UserId(String);
+pub struct UserId(pub String);
 
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
-pub struct GroupId(String);
+pub struct GroupId(pub String);
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AutoExperiment {
@@ -247,27 +247,28 @@ pub struct AutoExperiments<'client> {
 
 impl<'client> AutoExperiments<'client> {
     pub fn get(self) -> Result<Bytes, Error> {
-        todo!()
-        // self.client
-        //     .inner
-        //     .get(self.client.url.join("api/data/exps").unwrap())
-        //     .query(&[
-        //         (
-        //             "exps",
-        //             self.inner
-        //                 .into_iter()
-        //                 .flat_map(|experiment| experiment.runs.into_iter().map(|run| run.data.key))
-        //                 .collect::<Vec<_>>()
-        //                 .join(","),
-        //         ),
-        //         ("dataType", "auto".into()),
-        //     ])
-        //     .bearer_auth(self.client.auth_token.token.clone())
-        //     .send()
-        //     .map_err(|source| Error::Request { source })?
-        //     .error_for_status()
-        //     .map_err(|source| Error::Request { source })?
-        //     .bytes()
-        //     .map_err(|source| Error::Request { source })
+        self.client
+            .inner
+            .post(
+                self.client
+                    .url
+                    .join("api/v2/auto-experiments/download")
+                    .unwrap(),
+            )
+            .query(&[(
+                "id",
+                self.inner
+                    .into_iter()
+                    .map(|experiment| experiment.id.0)
+                    .collect::<Vec<_>>()
+                    .join(","),
+            )])
+            .bearer_auth(self.client.auth_token.token.clone())
+            .send()
+            .map_err(|source| Error::Request { source })?
+            .error_for_status()
+            .map_err(|source| Error::Request { source })?
+            .bytes()
+            .map_err(|source| Error::Request { source })
     }
 }

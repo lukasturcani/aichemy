@@ -295,6 +295,7 @@ struct Experiment {
     #[serde(rename = "expNo")]
     exp_no: String,
     holder: String,
+    #[serde(rename = "dataPath")]
     data_path: PathBuf,
     solvent: String,
     #[serde(rename = "submittedAt", skip_serializing_if = "Option::is_none")]

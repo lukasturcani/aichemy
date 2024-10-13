@@ -1,3 +1,5 @@
+use std::io::{Seek, SeekFrom, Write};
+
 use aichemy::nmr::nomad_nmr::{AutoExperimentQuery, Client};
 
 #[test]
@@ -8,7 +10,8 @@ fn download_all() -> Result<(), Box<dyn std::error::Error>> {
         "foo",
     )?;
     let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
-    println!("{:?}", experiments);
-    // std::fs::write("/home/lt912/experiments.zip", experiments.get()?)?;
+    let mut file = tempfile::tempfile()?;
+    file.write_all(experiments.get()?.as_ref())?;
+    file.seek(SeekFrom::Start(0))?;
     Ok(())
 }
