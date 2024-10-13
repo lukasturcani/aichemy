@@ -505,7 +505,7 @@ async fn add_experiments(
             format!("{}.json", experiment.exp_id),
             SimpleFileOptions::default(),
         )?;
-        zip.write_all(serde_json::to_string(&experiment)?.as_bytes())?;
+        zip.write_all(serde_json::to_string(&experiment.exp_id)?.as_bytes())?;
         zip.finish()?;
     }
     Ok(ids
