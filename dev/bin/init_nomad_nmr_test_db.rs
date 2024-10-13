@@ -23,6 +23,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let instruments = add_instruments(&client, &cli.url, &token).await?;
     let parameter_sets = add_parameter_sets(&client, &cli.url, &token, &instruments).await?;
     let groups = add_groups(&client, &cli.url, &token, &parameter_sets).await?;
+    let users = add_users(&client, &cli.url, &token, &groups).await?;
     Ok(())
 }
 
@@ -151,7 +152,7 @@ async fn add_parameter_sets(
     Ok(parameter_set_ids)
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 struct GroupId(String);
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -212,6 +213,72 @@ async fn add_groups(
         group_ids.push(group_id);
     }
     Ok(group_ids)
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
+struct UserId(String);
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+struct User {
+    username: String,
+    password: String,
+    email: String,
+    #[serde(rename = "fullName")]
+    full_name: String,
+    #[serde(rename = "groupId")]
+    group_id: GroupId,
+}
+
+#[derive(Deserialize, Debug)]
+struct UserResponse {
+    #[serde(rename = "_id")]
+    id: UserId,
+}
+
+async fn add_users(
+    client: &reqwest::Client,
+    url: &Url,
+    token: &str,
+    groups: &[GroupId],
+) -> Result<Vec<UserId>, anyhow::Error> {
+    let users = [
+        User {
+            username: "user1".to_string(),
+            password: "password1".to_string(),
+            email: "user1@example.com".to_string(),
+            full_name: "User One".to_string(),
+            group_id: groups[0].clone(),
+        },
+        User {
+            username: "user2".to_string(),
+            password: "password2".to_string(),
+            email: "user2@example.com".to_string(),
+            full_name: "User Two".to_string(),
+            group_id: groups[1].clone(),
+        },
+        User {
+            username: "user3".to_string(),
+            password: "password3".to_string(),
+            email: "user3@example.com".to_string(),
+            full_name: "User Three".to_string(),
+            group_id: groups[0].clone(),
+        },
+    ];
+    let mut user_ids = Vec::with_capacity(users.len());
+    for user in users {
+        let user_id = client
+            .post(url.join("/api/admin/users")?)
+            .json(&user)
+            .bearer_auth(token)
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<UserResponse>()
+            .await?
+            .id;
+        user_ids.push(user_id);
+    }
+    Ok(user_ids)
 }
 
 #[derive(Deserialize, Debug)]
