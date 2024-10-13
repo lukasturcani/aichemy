@@ -1,9 +1,8 @@
 use bytes::Bytes;
-use chrono::{DateTime, Duration, NaiveDate, Utc};
+use chrono::{DateTime, Duration, Utc};
 use reqwest::{IntoUrl, Url};
 use serde::{Deserialize, Deserializer};
 use serde_json::json;
-use std::path::Path;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -37,122 +36,96 @@ pub struct Client {
     pub auth_token: AuthToken,
 }
 
-#[derive(Debug, Clone)]
-pub struct DateRange {
-    pub start: NaiveDate,
-    pub end: NaiveDate,
-}
-
-impl DateRange {
-    fn to_query(&self) -> String {
-        format!(
-            "{},{}",
-            self.start.format("%Y-%m-%d"),
-            self.end.format("%Y-%m-%d")
-        )
-    }
-}
-
 #[derive(Debug, Clone, Default)]
-pub struct ExperimentQuery {
-    pub instrument_id: Option<String>,
-    pub solvent: Option<String>,
-    pub parameter_set: Option<String>,
-    pub title: Option<String>,
-    pub date_range: Option<DateRange>,
-    pub group_id: Option<String>,
-    pub user_id: Option<String>,
-    pub dataset_name: Option<String>,
-    pub legacy_data: Option<bool>,
+pub struct AutoExperimentQuery {
+    pub solvent: Vec<String>,
+    pub instrument_id: Vec<String>,
+    pub parameter_set: Vec<String>,
+    pub title: Vec<String>,
+    pub start_date: Option<DateTime<Utc>>,
+    pub end_date: Option<DateTime<Utc>>,
+    pub group_id: Vec<String>,
+    pub user_id: Vec<String>,
+    pub dataset_name: Vec<String>,
+    pub offset: Option<usize>,
+    pub limit: Option<usize>,
 }
 
-impl ExperimentQuery {
+impl AutoExperimentQuery {
     fn into_query(self) -> Vec<(String, String)> {
-        let mut query = vec![("dataType".to_string(), "auto".to_string())];
-        if let Some(instrument_id) = self.instrument_id {
-            query.push(("instrumentId".to_string(), instrument_id));
+        let mut query = vec![];
+        if !self.instrument_id.is_empty() {
+            query.push(("instrumentId".to_string(), self.instrument_id.join(",")));
         }
-        if let Some(solvent) = self.solvent {
-            query.push(("solvent".to_string(), solvent));
+        if !self.solvent.is_empty() {
+            query.push(("solvent".to_string(), self.solvent.join(",")));
         }
-        if let Some(parameter_set) = self.parameter_set {
-            query.push(("paramSet".to_string(), parameter_set));
+        if !self.parameter_set.is_empty() {
+            query.push(("paramSet".to_string(), self.parameter_set.join(",")));
         }
-        if let Some(title) = self.title {
-            query.push(("title".to_string(), title));
+        if !self.title.is_empty() {
+            query.push(("title".to_string(), self.title.join(",")));
         }
-        if let Some(date_range) = self.date_range {
-            query.push(("dateRange".to_string(), date_range.to_query()));
+        if let Some(start_date) = self.start_date {
+            query.push(("startDate".to_string(), start_date.to_rfc3339()));
         }
-        if let Some(group_id) = self.group_id {
-            query.push(("groupId".to_string(), group_id));
+        if let Some(end_date) = self.end_date {
+            query.push(("endDate".to_string(), end_date.to_rfc3339()));
         }
-        if let Some(user_id) = self.user_id {
-            query.push(("userId".to_string(), user_id));
+        if !self.group_id.is_empty() {
+            query.push(("groupId".to_string(), self.group_id.join(",")));
         }
-        if let Some(dataset_name) = self.dataset_name {
-            query.push(("datasetName".to_string(), dataset_name));
+        if !self.user_id.is_empty() {
+            query.push(("userId".to_string(), self.user_id.join(",")));
         }
-        if let Some(legacy_data) = self.legacy_data {
-            query.push(("legacyData".to_string(), legacy_data.to_string()));
+        if !self.dataset_name.is_empty() {
+            query.push(("datasetName".to_string(), self.dataset_name.join(",")));
+        }
+        if let Some(offset) = self.offset {
+            query.push(("offset".to_string(), offset.to_string()));
+        }
+        if let Some(limit) = self.limit {
+            query.push(("limit".to_string(), limit.to_string()));
         }
         query
     }
 }
 
-fn deserialize_expires_in<'de, D>(deserializer: D) -> Result<i64, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    s.parse().map_err(serde::de::Error::custom)
-}
-
 #[derive(Debug, Deserialize)]
 struct AuthResponse {
-    #[serde(rename = "expiresIn", deserialize_with = "deserialize_expires_in")]
+    #[serde(rename = "expiresIn")]
     pub expires_in: i64,
     pub token: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct ExperimentSearchResponse {
-    data: Vec<ExperimentData>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct InstrumentData {
-    pub id: String,
-    pub name: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct UserData {
-    pub id: String,
-    pub username: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct GroupData {
-    pub id: String,
-    pub name: String,
-}
-
-fn deserialize_datetime<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+fn deserialize_datetime<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let s = String::deserialize(deserializer)?;
-    DateTime::parse_from_rfc3339(&s)
-        .map_err(serde::de::Error::custom)
-        .map(|dt| dt.into())
+    let s = Option::<String>::deserialize(deserializer)?;
+    let s = s.map(|s| DateTime::parse_from_rfc3339(&s));
+    match s {
+        Some(Ok(dt)) => Ok(Some(dt.into())),
+        Some(Err(source)) => Err(serde::de::Error::custom(source)),
+        None => Ok(None),
+    }
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ExperimentRunData {
-    pub key: String,
-    pub parameters: Option<String>,
-    pub title: String,
+pub struct AutoExperimentId(String);
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct InstrumentId(String);
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct UserId(String);
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct GroupId(String);
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AutoExperiment {
+    pub id: AutoExperimentId,
 
     #[serde(rename = "datasetName")]
     pub dataset_name: String,
@@ -163,27 +136,14 @@ pub struct ExperimentRunData {
     #[serde(rename = "parameterSet")]
     pub parameter_set: String,
 
-    #[serde(rename = "archivedAt", deserialize_with = "deserialize_datetime")]
-    pub archived_at: DateTime<Utc>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct ExperimentData {
-    pub instrument: InstrumentData,
-    pub user: UserData,
-    pub group: GroupData,
-    pub key: String,
-    pub solvent: String,
+    pub parameters: Option<String>,
     pub title: String,
-
-    #[serde(rename = "datasetName")]
-    pub dataset_name: String,
-
-    #[serde(rename = "submittedAt", deserialize_with = "deserialize_datetime")]
-    pub submitted_at: DateTime<Utc>,
-
-    #[serde(rename = "exps")]
-    pub runs: Vec<ExperimentRunData>,
+    pub instrument: InstrumentId,
+    pub user: UserId,
+    pub group: GroupId,
+    pub solvent: String,
+    // #[serde(rename = "submittedAt", deserialize_with = "deserialize_datetime")]
+    // pub submitted_at: Option<DateTime<Utc>>,
 }
 
 impl Client {
@@ -255,91 +215,54 @@ impl Client {
         Ok(self)
     }
 
-    pub fn connect(url: Url) -> Self {
-        todo!()
-    }
-
-    pub fn experiments(&self, query: ExperimentQuery) -> Result<Experiments, Error> {
+    pub fn auto_experiments(&self, query: AutoExperimentQuery) -> Result<AutoExperiments, Error> {
         let response = self
             .inner
-            .get(self.url.join("api/search/experiments").unwrap())
+            .get(self.url.join("api/v2/auto-experiments").unwrap())
             .query(&query.into_query())
             .bearer_auth(self.auth_token.token.clone())
             .send()
             .map_err(|source| Error::Request { source })?
             .error_for_status()
             .map_err(|source| Error::Request { source })?
-            .json::<ExperimentSearchResponse>()
+            .json::<Vec<AutoExperiment>>()
             .map_err(|source| Error::Request { source })?;
-        todo!()
-        // Ok(Experiments {
-        //     inner: response
-        //         .data
-        //         .into_iter()
-        //         .map(|data| Experiment { data, client: self })
-        //         .collect(),
-        //     client: self,
-        // })
+        Ok(AutoExperiments {
+            inner: response,
+            client: self,
+        })
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct Experiments<'client> {
-    pub inner: Vec<Experiment<'client>>,
+pub struct AutoExperiments<'client> {
+    pub inner: Vec<AutoExperiment>,
     pub client: &'client Client,
 }
 
-impl<'client> Experiments<'client> {
-    pub fn get(self) -> Result<Bytes, Error> {
-        self.client
-            .inner
-            .get(self.client.url.join("api/data/exps").unwrap())
-            .query(&[
-                (
-                    "exps",
-                    self.inner
-                        .into_iter()
-                        .flat_map(|experiment| experiment.runs.into_iter().map(|run| run.data.key))
-                        .collect::<Vec<_>>()
-                        .join(","),
-                ),
-                ("dataType", "auto".into()),
-            ])
-            .bearer_auth(self.client.auth_token.token.clone())
-            .send()
-            .map_err(|source| Error::Request { source })?
-            .error_for_status()
-            .map_err(|source| Error::Request { source })?
-            .bytes()
-            .map_err(|source| Error::Request { source })
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Experiment<'client> {
-    pub data: ExperimentData,
-    pub runs: Vec<ExperimentRun<'client>>,
-    pub client: &'client Client,
-}
-
-impl<'client> Experiment<'client> {
+impl<'client> AutoExperiments<'client> {
     pub fn get(self) -> Result<Bytes, Error> {
         todo!()
+        // self.client
+        //     .inner
+        //     .get(self.client.url.join("api/data/exps").unwrap())
+        //     .query(&[
+        //         (
+        //             "exps",
+        //             self.inner
+        //                 .into_iter()
+        //                 .flat_map(|experiment| experiment.runs.into_iter().map(|run| run.data.key))
+        //                 .collect::<Vec<_>>()
+        //                 .join(","),
+        //         ),
+        //         ("dataType", "auto".into()),
+        //     ])
+        //     .bearer_auth(self.client.auth_token.token.clone())
+        //     .send()
+        //     .map_err(|source| Error::Request { source })?
+        //     .error_for_status()
+        //     .map_err(|source| Error::Request { source })?
+        //     .bytes()
+        //     .map_err(|source| Error::Request { source })
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct ExperimentRun<'client> {
-    pub data: ExperimentRunData,
-    pub client: &'client Client,
-}
-
-impl<'client> ExperimentRun<'client> {
-    pub fn get(self) -> Result<Bytes, Error> {
-        todo!()
-    }
-}
-
-pub fn experiments_to_peak_df(experiments: Experiments, download_path: impl AsRef<Path>) {
-    todo!()
 }

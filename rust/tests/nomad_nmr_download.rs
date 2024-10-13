@@ -1,4 +1,4 @@
-use aichemy::nmr::nomad_nmr::{Client, ExperimentQuery};
+use aichemy::nmr::nomad_nmr::{AutoExperimentQuery, Client};
 
 #[test]
 fn download_all() -> Result<(), Box<dyn std::error::Error>> {
@@ -7,7 +7,8 @@ fn download_all() -> Result<(), Box<dyn std::error::Error>> {
         "admin",
         "foo",
     )?;
-    let experiments = client.experiments(ExperimentQuery::default())?;
+    let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
+    println!("{:?}", experiments);
     // std::fs::write("/home/lt912/experiments.zip", experiments.get()?)?;
     Ok(())
 }
