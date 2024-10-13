@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use clap::Parser;
 use mongodb::{
-    bson::{doc, Bson},
+    bson::{doc, oid::ObjectId, Bson},
     Client, Database,
 };
+use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
 struct Cli {
@@ -25,77 +26,132 @@ async fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-async fn add_instruments(db: &Database) -> Result<HashMap<usize, Bson>, anyhow::Error> {
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+struct InstrumentId(ObjectId);
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Instrument {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    id: Option<ObjectId>,
+    name: String,
+    #[serde(rename = "isActive")]
+    is_active: bool,
+    available: bool,
+    capacity: i64,
+    #[serde(rename = "dayAllowance")]
+    day_allowance: i64,
+    #[serde(rename = "nightAllowance")]
+    night_allowance: i64,
+    #[serde(rename = "overheadTime")]
+    overhead_time: i64,
+    cost: i64,
+}
+
+async fn add_instruments(db: &Database) -> Result<HashMap<usize, InstrumentId>, anyhow::Error> {
     let collection = db.collection("instruments");
     collection.delete_many(doc! {}).await?;
-    Ok(collection
+    let ids = collection
         .insert_many([
-            doc! {
-                "status": {
-                    "statusTable": [],
-                },
-                "name": "instrument-1",
-                "isActive": true,
-                "available": true,
-                "capacity": 60,
-                "dayAllowance": 20,
-                "nightAllowance": 195,
-                "overheadTime": 255,
-                "cost": 3
+            Instrument {
+                id: None,
+                name: "instrument-1".into(),
+                is_active: true,
+                available: true,
+                capacity: 60,
+                cost: 3,
+                day_allowance: 20,
+                night_allowance: 195,
+                overhead_time: 255,
             },
-            doc! {
-                "status": {
-                    "statusTable": [],
-                },
-                "name": "instrument-2",
-                "isActive": false,
-                "available": false,
-                "capacity": 60,
-                "cost": 2,
+            Instrument {
+                id: None,
+                name: "instrument-2".into(),
+                is_active: false,
+                available: false,
+                capacity: 60,
+                cost: 2,
+                day_allowance: 20,
+                night_allowance: 195,
+                overhead_time: 255,
             },
-            doc! {
-                "name": "instrument-3",
-                "isActive": true,
-                "available": true,
-                "capacity": 24,
-                "status": {
-                    "statusTable": [],
-                },
-                "cost": 2,
-                "dayAllowance": 20,
-                "nightAllowance": 195,
-                "overheadTime": 255,
-                "nightEnd": "09:00",
-                "nightStart": "19:00",
+            Instrument {
+                id: None,
+                name: "instrument-3".into(),
+                is_active: true,
+                available: true,
+                capacity: 24,
+                cost: 2,
+                day_allowance: 20,
+                night_allowance: 195,
+                overhead_time: 255,
             },
         ])
         .await?
-        .inserted_ids)
+        .inserted_ids;
+    Ok(ids
+        .into_iter()
+        .map(|id| (id.0, InstrumentId(id.1.as_object_id().unwrap())))
+        .collect())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+struct ParameterSetId(ObjectId);
+
+#[derive(Serialize, Deserialize)]
+struct ParameterSet {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    id: Option<ObjectId>,
+    name: String,
+    #[serde(rename = "availableOn")]
+    available_on: Vec<InstrumentId>,
 }
 
 async fn add_parameter_sets(
     db: &Database,
-    instruments: &HashMap<usize, Bson>,
-) -> Result<HashMap<usize, Bson>, anyhow::Error> {
+    instruments: &HashMap<usize, InstrumentId>,
+) -> Result<HashMap<usize, ParameterSetId>, anyhow::Error> {
     let collection = db.collection("parameter_sets");
     collection.delete_many(doc! {}).await?;
-    Ok(collection
+    let ids = collection
         .insert_many([
-            doc! {
-                "name": "parameter-set-1",
-                "availableOn": [instruments[&0].clone()],
+            ParameterSet {
+                id: None,
+                name: "parameter-set-1".into(),
+                available_on: vec![instruments[&0]],
             },
-            doc! {
-                "name": "parameter-set-2",
-                "availableOn": [instruments[&1].clone()],
+            ParameterSet {
+                id: None,
+                name: "parameter-set-2".into(),
+                available_on: vec![instruments[&1]],
             },
-            doc! {
-                "name": "parameter-set-3",
-                "availableOn": [instruments[&0].clone(), instruments[&2].clone()],
+            ParameterSet {
+                id: None,
+                name: "parameter-set-3".into(),
+                available_on: vec![instruments[&0], instruments[&2]],
             },
         ])
         .await?
-        .inserted_ids)
+        .inserted_ids;
+    Ok(ids
+        .into_iter()
+        .map(|id| (id.0, ParameterSetId(id.1.as_object_id().unwrap())))
+        .collect())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+struct GroupId(ObjectId);
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Group {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    id: Option<ObjectId>,
+    name: String,
+    #[serde(rename = "isActive")]
+    is_active: bool,
+    description: String,
+    #[serde(rename = "isBatch")]
+    is_batch: bool,
+    data_access: String,
 }
 
 async fn add_groups(db: &Database) -> Result<HashMap<usize, Bson>, anyhow::Error> {
@@ -172,7 +228,7 @@ async fn add_users(
 
 async fn add_experiments(
     db: &Database,
-    instruments: &HashMap<usize, Bson>,
+    instruments: &HashMap<usize, InstrumentId>,
     groups: &HashMap<usize, Bson>,
     users: &HashMap<usize, Bson>,
 ) -> Result<HashMap<usize, Bson>, anyhow::Error> {
@@ -184,7 +240,7 @@ async fn add_experiments(
                 "expId": "2106231050-2-1-test1-10",
                 "instrument": {
                     "name": "instrument-1",
-                    "id": instruments[&0].clone(),
+                    "id": instruments[&0].0.clone(),
                 },
                 "user": {
                     "username": "test1",
@@ -207,7 +263,7 @@ async fn add_experiments(
                 "expId": "2106231050-2-1-test1-11",
                 "instrument": {
                     "name": "instrument-1",
-                    "id": instruments[&0].clone(),
+                    "id": instruments[&0].0.clone(),
                 },
                 "user": {
                     "username": "test1",
@@ -230,7 +286,7 @@ async fn add_experiments(
                 "expId": "2106231055-3-2-test2-10",
                 "instrument": {
                     "name": "instrument-2",
-                    "id": instruments[&1].clone(),
+                    "id": instruments[&1].0.clone(),
                 },
                 "user": {
                     "username": "test2",
@@ -253,7 +309,7 @@ async fn add_experiments(
                 "expId": "2106231100-10-2-test3-10",
                 "instrument": {
                     "name": "instrument-2",
-                    "id": instruments[&1].clone(),
+                    "id": instruments[&1].0.clone(),
                 },
                 "user": {
                     "username": "test3",
@@ -276,7 +332,7 @@ async fn add_experiments(
                 "expId": "2106240012-10-2-test2-10",
                 "instrument": {
                     "name": "instrument-3",
-                    "id": instruments[&2].clone(),
+                    "id": instruments[&2].0.clone(),
                 },
                 "user": {
                     "username": "test3",
@@ -295,7 +351,7 @@ async fn add_experiments(
                 "expId": "2106241100-10-2-test3-10",
                 "instrument": {
                     "name": "instrument-3",
-                    "id": instruments[&2].clone(),
+                    "id": instruments[&2].0.clone(),
                 },
                 "user": {
                     "username": "test3",
@@ -318,7 +374,7 @@ async fn add_experiments(
                 "expId": "2106241100-10-2-test4-1",
                 "instrument": {
                     "name": "instrument-3",
-                    "id": instruments[&2].clone(),
+                    "id": instruments[&2].0.clone(),
                 },
                 "user": {
                     "username": "test3",
