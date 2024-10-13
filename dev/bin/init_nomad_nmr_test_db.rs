@@ -291,6 +291,52 @@ async fn add_experiments(
                 "dataPath": "./test/path",
                 "solvent": "C6D6",
             },
+            doc! {
+                "expId": "2106241100-10-2-test3-10",
+                "instrument": {
+                    "name": "instrument-3",
+                    "id": instruments[&2].clone(),
+                },
+                "user": {
+                    "username": "test3",
+                    "id": users[&2].clone(),
+                },
+                "group": {
+                    "name": "group-2",
+                    "id": groups[&1].clone(),
+                },
+                "datasetName": "2106241100-10-2-test3",
+                "status": "Archived",
+                "title": "Test Exp 6",
+                "parameterSet": "parameter-set-1",
+                "expNo": "10",
+                "holder": "10",
+                "dataPath": "./test/path",
+                "solvent": "CDCl3",
+            },
+            doc! {
+                "expId": "2106241100-10-2-test4-1",
+                "instrument": {
+                    "name": "instrument-3",
+                    "id": instruments[&2].clone(),
+                },
+                "user": {
+                    "username": "test3",
+                    "id": users[&2].clone(),
+                },
+                "group": {
+                    "name": "group-2",
+                    "id": groups[&1].clone(),
+                },
+                "datasetName": "2106241100-10-2-test4",
+                "status": "Archived",
+                "title": "Test Exp 7",
+                "parameterSet": "parameter-set-1",
+                "expNo": "1",
+                "holder": "11",
+                "dataPath": "./test/path",
+                "solvent": "CDCl3",
+            },
         ])
         .await?
         .inserted_ids)
