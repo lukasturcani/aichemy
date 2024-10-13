@@ -18,10 +18,10 @@ async fn main() -> Result<(), anyhow::Error> {
     let client = Client::with_uri_str(&cli.uri).await?;
     let db = client.database("nomad");
     let instruments = add_instruments(&db).await?;
-    let parameter_sets = add_parameter_sets(&db, &instruments).await?;
+    add_parameter_sets(&db, &instruments).await?;
     let groups = add_groups(&db).await?;
     let users = add_users(&db, &groups).await?;
-    let experiments = add_experiments(&db, &instruments, &groups, &users).await?;
+    add_experiments(&db, &instruments, &groups, &users).await?;
     Ok(())
 }
 
@@ -225,6 +225,52 @@ async fn add_experiments(
                 "holder": "2",
                 "dataPath": "./test/path",
                 "solvent": "CDCl3",
+            },
+            doc! {
+                "expId": "2106231055-3-2-test2-10",
+                "instrument": {
+                    "name": "instrument-2",
+                    "id": instruments[&1].clone(),
+                },
+                "user": {
+                    "username": "test2",
+                    "id": users[&1].clone(),
+                },
+                "group": {
+                    "name": "group-1",
+                    "id": groups[&0].clone(),
+                },
+                "datasetName": "2106231055-3-2-test2",
+                "status": "Archived",
+                "title": "Test Exp 3",
+                "parameterSet": "parameter-set-2",
+                "expNo": "10",
+                "holder": "3",
+                "dataPath": "./test/path",
+                "solvent": "C6D6",
+            },
+            doc! {
+                "expId": "2106231100-10-2-test3-10",
+                "instrument": {
+                    "name": "instrument-2",
+                    "id": instruments[&1].clone(),
+                },
+                "user": {
+                    "username": "test3",
+                    "id": users[&2].clone(),
+                },
+                "group": {
+                    "name": "group-1",
+                    "id": groups[&0].clone(),
+                },
+                "datasetName": "2106231100-10-2-test3",
+                "status": "Archived",
+                "title": "Test Exp 4",
+                "parameterSet": "parameter-set-1",
+                "expNo": "10",
+                "holder": "10",
+                "dataPath": "./test/path",
+                "solvent": "C6D6",
             },
         ])
         .await?
