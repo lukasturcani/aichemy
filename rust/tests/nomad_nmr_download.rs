@@ -8,6 +8,6 @@ fn download_all() -> Result<(), Box<dyn std::error::Error>> {
         "foo",
     )?;
     let experiments = client.experiments(ExperimentQuery::default())?;
-    std::fs::write("/home/lt912/experiments.zip", experiments.get()?)?;
+    // std::fs::write("/home/lt912/experiments.zip", experiments.get()?)?;
     Ok(())
 }
