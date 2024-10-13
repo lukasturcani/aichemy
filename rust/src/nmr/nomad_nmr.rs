@@ -142,8 +142,13 @@ pub struct AutoExperiment {
     pub user: UserId,
     pub group: GroupId,
     pub solvent: String,
-    // #[serde(rename = "submittedAt", deserialize_with = "deserialize_datetime")]
-    // pub submitted_at: Option<DateTime<Utc>>,
+
+    #[serde(
+        default,
+        rename = "submittedAt",
+        deserialize_with = "deserialize_datetime"
+    )]
+    pub submitted_at: Option<DateTime<Utc>>,
 }
 
 impl Client {
