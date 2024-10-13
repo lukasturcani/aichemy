@@ -111,16 +111,16 @@ where
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct AutoExperimentId(String);
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct InstrumentId(String);
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct UserId(String);
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct GroupId(String);
 
 #[derive(Debug, Deserialize, Clone)]
