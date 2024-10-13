@@ -26,7 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 struct InstrumentId(String);
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -34,6 +34,12 @@ struct Instrument {
     name: String,
     model: String,
     capacity: u8,
+}
+
+#[derive(Deserialize, Debug)]
+struct InstrumentResponse {
+    #[serde(rename = "_id")]
+    id: InstrumentId,
 }
 
 async fn add_instruments(
@@ -59,20 +65,32 @@ async fn add_instruments(
         },
     ];
 
+    let mut instrument_ids = Vec::with_capacity(instruments.len());
     for instrument in instruments {
-        client
+        let instrument_id = client
             .post(url.join("/api/admin/instruments")?)
             .json(&instrument)
             .bearer_auth(token)
             .send()
-            .await?;
+            .await?
+            .error_for_status()?
+            .json::<InstrumentResponse>()
+            .await?
+            .id;
+        instrument_ids.push(instrument_id);
     }
 
-    Ok(())
+    Ok(instrument_ids)
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
 struct ParameterSetId(String);
+
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+struct Param {
+    name: String,
+    value: Option<String>,
+}
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
 struct ParameterSet {
@@ -80,6 +98,14 @@ struct ParameterSet {
     description: String,
     #[serde(rename = "availableOn")]
     available_on: Vec<InstrumentId>,
+    #[serde(rename = "defaultParams")]
+    default_params: Vec<Param>,
+}
+
+#[derive(Deserialize, Debug)]
+struct ParameterSetResponse {
+    #[serde(rename = "_id")]
+    id: ParameterSetId,
 }
 
 async fn add_parameter_sets(
@@ -88,7 +114,41 @@ async fn add_parameter_sets(
     token: &str,
     instruments: &[InstrumentId],
 ) -> Result<Vec<ParameterSetId>, anyhow::Error> {
-    todo!()
+    let parameter_sets = [
+        ParameterSet {
+            name: "ParamSet 1".to_string(),
+            description: "Description 1".to_string(),
+            available_on: vec![instruments[0].clone()],
+            default_params: vec![],
+        },
+        ParameterSet {
+            name: "ParamSet 2".to_string(),
+            description: "Description 2".to_string(),
+            available_on: vec![instruments[1].clone()],
+            default_params: vec![],
+        },
+        ParameterSet {
+            name: "ParamSet 3".to_string(),
+            description: "Description 3".to_string(),
+            available_on: vec![instruments[0].clone(), instruments[2].clone()],
+            default_params: vec![],
+        },
+    ];
+    let mut parameter_set_ids = Vec::with_capacity(parameter_sets.len());
+    for parameter_set in parameter_sets {
+        let parameter_set_id = client
+            .post(url.join("/api/admin/param-sets")?)
+            .json(&parameter_set)
+            .bearer_auth(token)
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<ParameterSetResponse>()
+            .await?
+            .id;
+        parameter_set_ids.push(parameter_set_id);
+    }
+    Ok(parameter_set_ids)
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
