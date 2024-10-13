@@ -83,7 +83,7 @@ async fn add_instruments(
     Ok(instrument_ids)
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug, PartialEq, Eq, Clone)]
 struct ParameterSetId(String);
 
 #[derive(Deserialize, Serialize, Debug, PartialEq, Eq)]
@@ -151,7 +151,7 @@ async fn add_parameter_sets(
     Ok(parameter_set_ids)
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
 struct GroupId(String);
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -161,10 +161,14 @@ struct Group {
     description: String,
     #[serde(rename = "isBatch")]
     is_batch: bool,
-    #[serde(rename = "dataAccess")]
-    data_access: String,
     #[serde(rename = "expList")]
-    experiments: Vec<String>,
+    parameter_sets: Vec<ParameterSetId>,
+}
+
+#[derive(Deserialize, Debug)]
+struct GroupResponse {
+    #[serde(rename = "_id")]
+    id: GroupId,
 }
 
 async fn add_groups(
@@ -173,7 +177,41 @@ async fn add_groups(
     token: &str,
     parameter_sets: &[ParameterSetId],
 ) -> Result<Vec<GroupId>, anyhow::Error> {
-    todo!()
+    let groups = [
+        Group {
+            name: "Group 1".to_string(),
+            description: "Description 1".to_string(),
+            is_batch: false,
+            parameter_sets: vec![parameter_sets[0].clone()],
+        },
+        Group {
+            name: "Group 2".to_string(),
+            description: "Description 2".to_string(),
+            is_batch: true,
+            parameter_sets: vec![parameter_sets[1].clone()],
+        },
+        Group {
+            name: "Group 3".to_string(),
+            description: "Description 3".to_string(),
+            is_batch: false,
+            parameter_sets: vec![parameter_sets[0].clone(), parameter_sets[2].clone()],
+        },
+    ];
+    let mut group_ids = Vec::with_capacity(groups.len());
+    for group in groups {
+        let group_id = client
+            .post(url.join("/api/admin/groups")?)
+            .json(&group)
+            .bearer_auth(token)
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<GroupResponse>()
+            .await?
+            .id;
+        group_ids.push(group_id);
+    }
+    Ok(group_ids)
 }
 
 #[derive(Deserialize, Debug)]
