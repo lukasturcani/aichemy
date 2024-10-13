@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
-    fs,
+    fs::File,
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -10,6 +11,7 @@ use mongodb::{
     Client, Database,
 };
 use serde::{Deserialize, Serialize};
+use zip::{write::SimpleFileOptions, ZipWriter};
 
 #[derive(Parser)]
 struct Cli {
@@ -496,11 +498,15 @@ async fn add_experiments(
         },
     ];
     let ids = collection.insert_many(&experiments).await?.inserted_ids;
-    for (i, experiment) in experiments.into_iter().enumerate() {
-        fs::write(
-            datastore.join(format!("{}.zip", experiment.exp_id)),
-            format!("experiment {i}"),
+    for experiment in experiments {
+        let file = File::create(datastore.join(format!("{}.zip", experiment.exp_id)))?;
+        let mut zip = ZipWriter::new(file);
+        zip.start_file(
+            format!("{}.json", experiment.exp_id),
+            SimpleFileOptions::default(),
         )?;
+        zip.write_all(serde_json::to_string(&experiment)?.as_bytes())?;
+        zip.finish()?;
     }
     Ok(ids
         .into_iter()
