@@ -272,6 +272,25 @@ async fn add_experiments(
                 "dataPath": "./test/path",
                 "solvent": "C6D6",
             },
+            doc! {
+                "expId": "2106240012-10-2-test2-10",
+                "instrument": {
+                    "name": "instrument-3",
+                    "id": instruments[&2].clone(),
+                },
+                "user": {
+                    "username": "test3",
+                    "id": users[&2].clone(),
+                },
+                "datasetName": "2106240012-10-2-test2",
+                "status": "Available",
+                "title": "Test Exp 5",
+                "parameterSet": "parameter-set-1",
+                "expNo": "10",
+                "holder": "10",
+                "dataPath": "./test/path",
+                "solvent": "C6D6",
+            },
         ])
         .await?
         .inserted_ids)
