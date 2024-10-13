@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use clap::Parser;
 use mongodb::{
-    bson::{doc, oid::ObjectId, Bson},
+    bson::{doc, oid::ObjectId, DateTime},
     Client, Database,
 };
 use serde::{Deserialize, Serialize};
@@ -145,255 +145,352 @@ struct GroupId(ObjectId);
 struct Group {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     id: Option<ObjectId>,
+    #[serde(rename = "groupName")]
     name: String,
     #[serde(rename = "isActive")]
     is_active: bool,
     description: String,
     #[serde(rename = "isBatch")]
     is_batch: bool,
+    #[serde(rename = "dataAccess")]
     data_access: String,
 }
 
-async fn add_groups(db: &Database) -> Result<HashMap<usize, Bson>, anyhow::Error> {
+async fn add_groups(db: &Database) -> Result<HashMap<usize, GroupId>, anyhow::Error> {
     let collection = db.collection("groups");
     collection
         .delete_many(doc! {"groupName": {"$ne": "default"}})
         .await?;
-    Ok(collection
+    let ids = collection
         .insert_many([
-            doc! {
-                "groupName": "group-1",
-                "isActive": true,
-                "description": "Test group 1",
-                "isBatch": false,
-                "dataAccess": "user",
+            Group {
+                id: None,
+                name: "group-1".into(),
+                is_active: true,
+                description: "Test group 1".into(),
+                is_batch: false,
+                data_access: "user".into(),
             },
-            doc! {
-                "groupName": "test-admins",
-                "isActive": true,
-                "description": "Admins test group",
-                "isBatch": true,
-                "dataAccess": "user",
-                "exUsers": [],
+            Group {
+                id: None,
+                name: "test-admins".into(),
+                is_active: true,
+                description: "Admins test group".into(),
+                is_batch: true,
+                data_access: "user".into(),
             },
         ])
         .await?
-        .inserted_ids)
+        .inserted_ids;
+    Ok(ids
+        .into_iter()
+        .map(|id| (id.0, GroupId(id.1.as_object_id().unwrap())))
+        .collect())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+struct UserId(ObjectId);
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct User {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    id: Option<ObjectId>,
+    username: String,
+    #[serde(rename = "fullName")]
+    full_name: String,
+    email: String,
+    password: String,
+    #[serde(rename = "isActive")]
+    is_active: bool,
+    group: GroupId,
+    #[serde(rename = "accessLevel")]
+    access_level: String,
 }
 
 async fn add_users(
     db: &Database,
-    groups: &HashMap<usize, Bson>,
-) -> Result<HashMap<usize, Bson>, anyhow::Error> {
+    groups: &HashMap<usize, GroupId>,
+) -> Result<HashMap<usize, UserId>, anyhow::Error> {
     let collection = db.collection("users");
     collection
         .delete_many(doc! {"username": {"$ne": "admin"}})
         .await?;
-    Ok(collection
+    let ids = collection
         .insert_many([
-            doc! {
-                "username": "test1",
-                "fullName": "Test User One",
-                "email": "test1@test.com",
-                "password": "t1p1",
-                "isActive": false,
-                "group": groups[&0].clone(),
-                "accessLevel": "user",
-                "tokens": [],
+            User {
+                id: None,
+                username: "test1".into(),
+                full_name: "Test User One".into(),
+                email: "test1@test.com".into(),
+                password: "t1p1".into(),
+                is_active: false,
+                group: groups[&0],
+                access_level: "user".into(),
             },
-            doc! {
-                "username": "test2",
-                "fullName": "Test User Two",
-                "email": "test2@test.com",
-                "password": "t2p2",
-                "isActive": false,
-                "group": groups[&0].clone(),
-                "accessLevel": "user",
-                "tokens": [],
+            User {
+                id: None,
+                username: "test2".into(),
+                full_name: "Test User Two".into(),
+                email: "test2@test.com".into(),
+                password: "t2p2".into(),
+                is_active: false,
+                group: groups[&0],
+                access_level: "user".into(),
             },
-            doc! {
-                "username": "test3",
-                "fullName": "Test User Three",
-                "email": "test3@test.com",
-                "password": "t3p3",
-                "isActive": false,
-                "group": groups[&1].clone(),
-                "accessLevel": "admin",
-                "tokens": [],
+            User {
+                id: None,
+                username: "test3".into(),
+                full_name: "Test User Three".into(),
+                email: "test3@test.com".into(),
+                password: "t3p3".into(),
+                is_active: false,
+                group: groups[&1],
+                access_level: "admin".into(),
             },
         ])
         .await?
-        .inserted_ids)
+        .inserted_ids;
+    Ok(ids
+        .into_iter()
+        .map(|id| (id.0, UserId(id.1.as_object_id().unwrap())))
+        .collect())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+struct ExperimentId(ObjectId);
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct InstrumentInfo {
+    id: InstrumentId,
+    name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct UserInfo {
+    id: UserId,
+    username: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct GroupInfo {
+    id: GroupId,
+    name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct Experiment {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    id: Option<ObjectId>,
+    #[serde(rename = "expId")]
+    exp_id: String,
+    instrument: InstrumentInfo,
+    user: UserInfo,
+    group: GroupInfo,
+    #[serde(rename = "datasetName")]
+    dataset_name: String,
+    status: String,
+    title: String,
+    #[serde(rename = "parameterSet")]
+    parameter_set: ParameterSetId,
+    #[serde(rename = "expNo")]
+    exp_no: String,
+    holder: String,
+    data_path: PathBuf,
+    solvent: String,
+    #[serde(rename = "submittedAt", skip_serializing_if = "Option::is_none")]
+    submitted_at: Option<DateTime>,
 }
 
 async fn add_experiments(
     db: &Database,
     instruments: &HashMap<usize, InstrumentId>,
-    groups: &HashMap<usize, Bson>,
-    users: &HashMap<usize, Bson>,
-) -> Result<HashMap<usize, Bson>, anyhow::Error> {
+    groups: &HashMap<usize, GroupId>,
+    users: &HashMap<usize, UserId>,
+) -> Result<HashMap<usize, ExperimentId>, anyhow::Error> {
     let collection = db.collection("experiments");
     collection.delete_many(doc! {}).await?;
-    Ok(collection
+    let ids = collection
         .insert_many([
-            doc! {
-                "expId": "2106231050-2-1-test1-10",
-                "instrument": {
-                    "name": "instrument-1",
-                    "id": instruments[&0].0.clone(),
+            Experiment {
+                id: None,
+                exp_id: "2106231050-2-1-test1-10".into(),
+                instrument: InstrumentInfo {
+                    id: instruments[&0],
+                    name: "instrument-1".into(),
                 },
-                "user": {
-                    "username": "test1",
-                    "id": users[&0].clone(),
+                user: UserInfo {
+                    id: users[&0],
+                    username: "test1".into(),
                 },
-                "group": {
-                    "name": "group-1",
-                    "id": groups[&0].clone(),
+                group: GroupInfo {
+                    id: groups[&0],
+                    name: "group-1".into(),
                 },
-                "datasetName": "2106231050-2-1-test1",
-                "status": "Archived",
-                "title": "Test Exp 1",
-                "parameterSet": "parameter-set-1",
-                "expNo": "10",
-                "holder": "2",
-                "dataPath": "./test/path",
-                "solvent": "CDCl3",
+                dataset_name: "2106231050-2-1-test1".into(),
+                status: "Archived".into(),
+                title: "Test Exp 1".into(),
+                parameter_set: ParameterSetId(ObjectId::new()),
+                exp_no: "10".into(),
+                holder: "2".into(),
+                data_path: PathBuf::from("./test/path"),
+                solvent: "CDCl3".into(),
+                submitted_at: None,
             },
-            doc! {
-                "expId": "2106231050-2-1-test1-11",
-                "instrument": {
-                    "name": "instrument-1",
-                    "id": instruments[&0].0.clone(),
+            Experiment {
+                id: None,
+                exp_id: "2106231050-2-1-test1-11".into(),
+                instrument: InstrumentInfo {
+                    id: instruments[&0],
+                    name: "instrument-1".into(),
                 },
-                "user": {
-                    "username": "test1",
-                    "id": users[&0].clone(),
+                user: UserInfo {
+                    id: users[&0],
+                    username: "test1".into(),
                 },
-                "group": {
-                    "name": "group-1",
-                    "id": groups[&0].clone(),
+                group: GroupInfo {
+                    id: groups[&0],
+                    name: "group-1".into(),
                 },
-                "datasetName": "2106231050-2-1-test1",
-                "status": "Archived",
-                "title": "Test Exp 1",
-                "parameterSet": "parameter-set-2",
-                "expNo": "11",
-                "holder": "2",
-                "dataPath": "./test/path",
-                "solvent": "CDCl3",
+                dataset_name: "2106231050-2-1-test1".into(),
+                status: "Archived".into(),
+                title: "Test Exp 1".into(),
+                parameter_set: ParameterSetId(ObjectId::new()),
+                exp_no: "11".into(),
+                holder: "2".into(),
+                data_path: PathBuf::from("./test/path"),
+                solvent: "CDCl3".into(),
+                submitted_at: None,
             },
-            doc! {
-                "expId": "2106231055-3-2-test2-10",
-                "instrument": {
-                    "name": "instrument-2",
-                    "id": instruments[&1].0.clone(),
+            Experiment {
+                id: None,
+                exp_id: "2106231055-3-2-test2-10".into(),
+                instrument: InstrumentInfo {
+                    id: instruments[&1],
+                    name: "instrument-2".into(),
                 },
-                "user": {
-                    "username": "test2",
-                    "id": users[&1].clone(),
+                user: UserInfo {
+                    id: users[&1],
+                    username: "test2".into(),
                 },
-                "group": {
-                    "name": "group-1",
-                    "id": groups[&0].clone(),
+                group: GroupInfo {
+                    id: groups[&0],
+                    name: "group-1".into(),
                 },
-                "datasetName": "2106231055-3-2-test2",
-                "status": "Archived",
-                "title": "Test Exp 3",
-                "parameterSet": "parameter-set-2",
-                "expNo": "10",
-                "holder": "3",
-                "dataPath": "./test/path",
-                "solvent": "C6D6",
+                dataset_name: "2106231055-3-2-test2".into(),
+                status: "Archived".into(),
+                title: "Test Exp 3".into(),
+                parameter_set: ParameterSetId(ObjectId::new()),
+                exp_no: "10".into(),
+                holder: "3".into(),
+                data_path: PathBuf::from("./test/path"),
+                solvent: "C6D6".into(),
+                submitted_at: None,
             },
-            doc! {
-                "expId": "2106231100-10-2-test3-10",
-                "instrument": {
-                    "name": "instrument-2",
-                    "id": instruments[&1].0.clone(),
+            Experiment {
+                id: None,
+                exp_id: "2106231100-10-2-test3-10".into(),
+                instrument: InstrumentInfo {
+                    id: instruments[&2],
+                    name: "instrument-2".into(),
                 },
-                "user": {
-                    "username": "test3",
-                    "id": users[&2].clone(),
+                user: UserInfo {
+                    id: users[&2],
+                    username: "test3".into(),
                 },
-                "group": {
-                    "name": "group-1",
-                    "id": groups[&0].clone(),
+                group: GroupInfo {
+                    id: groups[&0],
+                    name: "group-1".into(),
                 },
-                "datasetName": "2106231100-10-2-test3",
-                "status": "Archived",
-                "title": "Test Exp 4",
-                "parameterSet": "parameter-set-1",
-                "expNo": "10",
-                "holder": "10",
-                "dataPath": "./test/path",
-                "solvent": "C6D6",
+                dataset_name: "2106231100-10-2-test3".into(),
+                status: "Archived".into(),
+                title: "Test Exp 4".into(),
+                parameter_set: ParameterSetId(ObjectId::new()),
+                exp_no: "10".into(),
+                holder: "10".into(),
+                data_path: PathBuf::from("./test/path"),
+                solvent: "C6D6".into(),
+                submitted_at: None,
             },
-            doc! {
-                "expId": "2106240012-10-2-test2-10",
-                "instrument": {
-                    "name": "instrument-3",
-                    "id": instruments[&2].0.clone(),
+            Experiment {
+                id: None,
+                exp_id: "2106240012-10-2-test2-10".into(),
+                instrument: InstrumentInfo {
+                    id: instruments[&2],
+                    name: "instrument-3".into(),
                 },
-                "user": {
-                    "username": "test3",
-                    "id": users[&2].clone(),
+                user: UserInfo {
+                    id: users[&2],
+                    username: "test3".into(),
                 },
-                "datasetName": "2106240012-10-2-test2",
-                "status": "Available",
-                "title": "Test Exp 5",
-                "parameterSet": "parameter-set-1",
-                "expNo": "10",
-                "holder": "10",
-                "dataPath": "./test/path",
-                "solvent": "C6D6",
+                group: GroupInfo {
+                    id: groups[&0],
+                    name: "group-1".into(),
+                },
+                dataset_name: "2106240012-10-2-test2".into(),
+                status: "Available".into(),
+                title: "Test Exp 5".into(),
+                parameter_set: ParameterSetId(ObjectId::new()),
+                exp_no: "10".into(),
+                holder: "10".into(),
+                data_path: PathBuf::from("./test/path"),
+                solvent: "C6D6".into(),
+                submitted_at: None,
             },
-            doc! {
-                "expId": "2106241100-10-2-test3-10",
-                "instrument": {
-                    "name": "instrument-3",
-                    "id": instruments[&2].0.clone(),
+            Experiment {
+                id: None,
+                exp_id: "2106241100-10-2-test3-10".into(),
+                instrument: InstrumentInfo {
+                    id: instruments[&2],
+                    name: "instrument-3".into(),
                 },
-                "user": {
-                    "username": "test3",
-                    "id": users[&2].clone(),
+                user: UserInfo {
+                    id: users[&2],
+                    username: "test3".into(),
                 },
-                "group": {
-                    "name": "group-2",
-                    "id": groups[&1].clone(),
+                group: GroupInfo {
+                    id: groups[&1],
+                    name: "group-2".into(),
                 },
-                "datasetName": "2106241100-10-2-test3",
-                "status": "Archived",
-                "title": "Test Exp 6",
-                "parameterSet": "parameter-set-1",
-                "expNo": "10",
-                "holder": "10",
-                "dataPath": "./test/path",
-                "solvent": "CDCl3",
+                dataset_name: "2106241100-10-2-test3".into(),
+                status: "Archived".into(),
+                title: "Test Exp 6".into(),
+                parameter_set: ParameterSetId(ObjectId::new()),
+                exp_no: "10".into(),
+                holder: "10".into(),
+                data_path: PathBuf::from("./test/path"),
+                solvent: "CDCl3".into(),
+                submitted_at: None,
             },
-            doc! {
-                "expId": "2106241100-10-2-test4-1",
-                "instrument": {
-                    "name": "instrument-3",
-                    "id": instruments[&2].0.clone(),
+            Experiment {
+                id: None,
+                exp_id: "2106241100-10-2-test4-1".into(),
+                instrument: InstrumentInfo {
+                    id: instruments[&2],
+                    name: "instrument-3".into(),
                 },
-                "user": {
-                    "username": "test3",
-                    "id": users[&2].clone(),
+                user: UserInfo {
+                    id: users[&2],
+                    username: "test3".into(),
                 },
-                "group": {
-                    "name": "group-2",
-                    "id": groups[&1].clone(),
+                group: GroupInfo {
+                    id: groups[&1],
+                    name: "group-2".into(),
                 },
-                "datasetName": "2106241100-10-2-test4",
-                "status": "Archived",
-                "title": "Test Exp 7",
-                "parameterSet": "parameter-set-1",
-                "expNo": "1",
-                "holder": "11",
-                "dataPath": "./test/path",
-                "solvent": "CDCl3",
+                dataset_name: "2106241100-10-2-test4".into(),
+                status: "Archived".into(),
+                title: "Test Exp 7".into(),
+                parameter_set: ParameterSetId(ObjectId::new()),
+                exp_no: "1".into(),
+                holder: "11".into(),
+                data_path: PathBuf::from("./test/path"),
+                solvent: "CDCl3".into(),
+                submitted_at: Some(DateTime::parse_rfc3339_str("2024-01-01T00:00:00.000Z")?),
             },
         ])
         .await?
-        .inserted_ids)
+        .inserted_ids;
+    Ok(ids
+        .into_iter()
+        .map(|id| (id.0, ExperimentId(id.1.as_object_id().unwrap())))
+        .collect())
 }
