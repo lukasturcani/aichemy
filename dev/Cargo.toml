@@ -1,0 +1,18 @@
+[package]
+name = "dev"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+reqwest = { version = "0.12.7", features = ["json"] }
+anyhow = "1.0.89"
+clap = { version = "4.5.20", features = ["derive"] }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = "1.0.128"
+tokio = { version = "1.29.1", features = ["full"] }
+
+
+[[bin]]
+name = "init_nomad_nmr_test_db"
+path = "bin/init_nomad_nmr_test_db.rs"

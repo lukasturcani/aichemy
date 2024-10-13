@@ -271,14 +271,15 @@ impl Client {
             .map_err(|source| Error::Request { source })?
             .json::<ExperimentSearchResponse>()
             .map_err(|source| Error::Request { source })?;
-        Ok(Experiments {
-            inner: response
-                .data
-                .into_iter()
-                .map(|data| Experiment { data, client: self })
-                .collect(),
-            client: self,
-        })
+        todo!()
+        // Ok(Experiments {
+        //     inner: response
+        //         .data
+        //         .into_iter()
+        //         .map(|data| Experiment { data, client: self })
+        //         .collect(),
+        //     client: self,
+        // })
     }
 }
 
