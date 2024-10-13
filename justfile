@@ -1,11 +1,5 @@
 default:
   @just --list
 
-clear_nomad_nmr_test_db mongo-container:
-  docker exec {{mongo-container}} mongosh --eval "db.getSiblingDB('nomad').instruments.deleteMany({})"
-  docker exec {{mongo-container}} mongosh --eval "db.getSiblingDB('nomad').parametersets.deleteMany({})"
-  docker exec {{mongo-container}} mongosh --eval "db.getSiblingDB('nomad').groups.deleteMany({groupName: {\$ne: 'default'}})"
-  docker exec {{mongo-container}} mongosh --eval "db.getSiblingDB('nomad').users.deleteMany({username: {\$ne: 'admin'}})"
-
-init_nomad_nmr_test_db mongo-container backend-url="http://localhost:8080": (clear_nomad_nmr_test_db mongo-container)
-  cargo run --bin init_nomad_nmr_test_db -- {{backend-url}}
+init_nomad_nmr_test_db mongo-uri="mongodb://localhost:27017":
+  cargo run --bin init_nomad_nmr_test_db -- {{mongo-uri}}
