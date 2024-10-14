@@ -26,4 +26,8 @@ check:
   (set -x; cargo test --all-features --all-targets)
   test $? = 0
 
+  echo
+  (set -x; cargo test --doc)
+  test $? = 0
+
   test $error = 0

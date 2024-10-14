@@ -68,12 +68,18 @@ impl AuthToken {
     }
 }
 
+/// Client for interacting with the NOMAD server.
 #[derive(Debug, Clone)]
 pub struct Client {
+    /// The unerlying [reqwest::blocking::Client].
     pub inner: reqwest::blocking::Client,
+    /// The URL of the NOMAD server.
     pub url: Url,
+    /// The username to use for authentication.
     pub username: String,
+    /// The password to use for authentication.
     pub password: String,
+    /// The authentication token to use for requests.
     pub auth_token: AuthToken,
 }
 
