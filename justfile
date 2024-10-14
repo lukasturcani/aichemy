@@ -34,6 +34,7 @@ check:
   test $? = 0
 
   echo
+  # TODO: ENABLE ALL FEATURES?
   (set -x; RUSTDOCFLAGS="-D warnings" cargo doc --no-deps)
   test $? = 0
 
