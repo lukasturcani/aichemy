@@ -58,13 +58,26 @@ impl AuthToken {
     /// # Examples
     ///
     /// ```rust
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut client = aichemy::nmr::nomad_nmr::Client {
+    /// #     inner: reqwest::blocking::Client::new(),
+    /// #     url: reqwest::Url::parse("https://example.com")?,
+    /// #     username: "username".to_string(),
+    /// #     password: "password".to_string(),
+    /// #     auth_token: aichemy::nmr::nomad_nmr::AuthToken {
+    /// #         token: "token".to_string(),
+    /// #         expiry_time: chrono::Utc::now() + chrono::Duration::days(1),
+    /// #     },
+    /// # };
     /// // Generate a new token if the current one is expired.
     /// if client.auth_token.expired() {
     ///     client.auth()?;
     /// }
+    /// # Ok(())
+    /// # }
     /// ```
     pub fn expired(&self) -> bool {
-        todo!()
+        self.expiry_time < Utc::now()
     }
 }
 
