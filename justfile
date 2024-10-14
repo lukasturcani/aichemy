@@ -1,9 +1,12 @@
+# Show all available recipes
 default:
   @just --list
 
+# Populate a MongoDB database with test data
 init_nomad_nmr_test_db nomad-datastore mongo-uri="mongodb://localhost:27017":
   cargo run --bin init_nomad_nmr_test_db -- {{nomad-datastore}} {{mongo-uri}}
 
+# Run all code checks
 check:
   #!/usr/bin/env bash
 
