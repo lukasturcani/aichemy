@@ -437,38 +437,59 @@ where
     }
 }
 
+/// A unique id for an auto experiment.
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct AutoExperimentId(pub String);
 
+/// A unique id for an instrument.
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct InstrumentId(pub String);
 
+/// A unique id for a NOMAD user.
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct UserId(pub String);
 
+/// A unique id for a group.
 #[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct GroupId(pub String);
 
+/// Data about an auto experiment stored in NOMAD.
 #[derive(Debug, Deserialize, Clone)]
 pub struct AutoExperiment {
+    /// The unique id of the auto experiment.
     pub id: AutoExperimentId,
 
+    /// The name of the dataset the experiment belongs to.
     #[serde(rename = "datasetName")]
     pub dataset_name: String,
 
+    /// The experiment number.
     #[serde(rename = "expNo")]
     pub experiment_number: String,
 
+    /// The parameter set used to run the experiment.
     #[serde(rename = "parameterSet")]
     pub parameter_set: String,
 
+    /// The parameters used to run the experiment.
     pub parameters: Option<String>,
+
+    /// The title of the experiment.
     pub title: String,
+
+    /// The instrument used to run the experiment.
     pub instrument: InstrumentId,
+
+    /// The user who ran the experiment.
     pub user: UserId,
+
+    /// The group the experiment belongs to.
     pub group: GroupId,
+
+    /// The solvent used in the experiment.
     pub solvent: String,
 
+    /// The date and time the experiment was submitted.
     #[serde(
         default,
         rename = "submittedAt",
@@ -477,13 +498,17 @@ pub struct AutoExperiment {
     pub submitted_at: Option<DateTime<Utc>>,
 }
 
+/// A collection of auto experiments stored in NOMAD.
 #[derive(Debug, Clone)]
 pub struct AutoExperiments<'client> {
+    /// The auto experiment data.
     pub inner: Vec<AutoExperiment>,
+    /// The client which can be used to download the auto experiments.
     pub client: &'client Client,
 }
 
 impl<'client> AutoExperiments<'client> {
+    /// Download the auto experiments as a zip archive.
     pub fn get(self) -> Result<Bytes, Error> {
         self.client
             .inner
