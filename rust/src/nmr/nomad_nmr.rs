@@ -105,7 +105,7 @@ impl AuthToken {
 /// ```
 #[derive(Debug, Clone)]
 pub struct Client {
-    /// The unerlying [reqwest::blocking::Client].
+    /// The underlying [reqwest::blocking::Client].
     pub inner: reqwest::blocking::Client,
     /// The URL of the NOMAD server.
     pub url: Url,
@@ -163,6 +163,29 @@ impl Client {
         })
     }
 
+    /// Make the client use a new authentication token.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut client = aichemy::nmr::nomad_nmr::Client {
+    /// #     inner: reqwest::blocking::Client::new(),
+    /// #     url: reqwest::Url::parse("https://example.com")?,
+    /// #     username: "username".to_string(),
+    /// #     password: "password".to_string(),
+    /// #     auth_token: aichemy::nmr::nomad_nmr::AuthToken {
+    /// #         token: "token".to_string(),
+    /// #         expiry_time: chrono::Utc::now() + chrono::Duration::days(1),
+    /// #     },
+    /// # };
+    /// // Generate a new token if the current one is expired.
+    /// if client.auth_token.expired() {
+    ///     client.auth()?;
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn auth(&mut self) -> Result<&mut Self, Error> {
         let login_url = self.url.join("api/auth/login").unwrap();
         let response = self
