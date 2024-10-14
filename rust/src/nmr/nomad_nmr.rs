@@ -86,7 +86,7 @@ impl AuthToken {
 /// Use the methods on the client to send requests to the NOMAD server.
 ///
 /// # Examples
-/// ```rust
+/// ```rust,no_run
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use aichemy::nmr::nomad_nmr::{AutoExperimentQuery, Client};
 /// use std::fs;
@@ -100,7 +100,6 @@ impl AuthToken {
 /// // Download auto experiments into a zip archive.
 /// let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
 /// fs::write("experiments.zip", experiments.get()?)?;
-/// # fs::remove_file("experiments.zip")?;
 /// # Ok(())
 /// # }
 /// ```
