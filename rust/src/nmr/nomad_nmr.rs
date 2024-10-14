@@ -1,3 +1,18 @@
+//! Tools to interact with a [`NOMAD NMR`].
+//!
+//! A [`NOMAD NMR`] deployment is used by NMR labs to manage their machines
+//! and store their data in a central place and in a
+//! [FAIR](https://en.wikipedia.org/wiki/FAIR_data) manner. It automatically
+//! provides features such as a monitoring system and a data repository which includes
+//! metadata and access control.
+//!
+//! The NOMAD NMR [server](https://github.com/nomad-nmr/nomad-server) provides a
+//! REST API to interact with it, which this module relies upon. The primary goal of
+//! this module is to provide an interface for downloading large datasets from the
+//! NOMAD server and turn them into data frames which can be used for machine learning.
+//!
+//! [`NOMAD NMR`]: https://www.nomad-nmr.uk
+
 use bytes::Bytes;
 use chrono::{DateTime, Duration, Utc};
 use reqwest::{IntoUrl, Url};
