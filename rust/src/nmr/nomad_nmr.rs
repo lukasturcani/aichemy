@@ -88,7 +88,7 @@ impl AuthToken {
 /// # Examples
 /// ```rust
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use aichemy::nmr::nomad_nmr::Client;
+/// use aichemy::nmr::nomad_nmr::{AutoExperimentQuery, Client};
 /// use std::fs;
 ///
 /// let mut client = Client::login(
