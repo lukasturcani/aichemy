@@ -20,23 +20,49 @@ use serde::{Deserialize, Deserializer};
 use serde_json::json;
 use thiserror::Error;
 
+/// Error which may occur when interacting with the NOMAD server.
 #[derive(Error, Debug)]
 pub enum Error {
+    /// Failed to authenticate with the NOMAD server.
     #[error("Failed to authenticate with NOMAD NMR server: {0}")]
     Auth(String),
+    /// Failed to parse the URL.
     #[error("Failed to parse url: {source}")]
-    InvalidUrl { source: reqwest::Error },
+    InvalidUrl {
+        /// The underlying error.
+        source: reqwest::Error,
+    },
+    /// Request failed.
     #[error("Request failed: {source}")]
-    Request { source: reqwest::Error },
+    Request {
+        /// The underlying error.
+        source: reqwest::Error,
+    },
 }
 
+/// Authentication token for the NOMAD server.
+///
+/// A token must be used to authenticate requests to the NOMAD server. Generally
+/// produced by the [Client::login] and [Client::auth] methods.
 #[derive(Debug, Clone)]
 pub struct AuthToken {
+    /// Time at which the token expires.
     pub expiry_time: DateTime<Utc>,
+    /// The value of the token.
     pub token: String,
 }
 
 impl AuthToken {
+    /// Check if the token is expired.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// // Generate a new token if the current one is expired.
+    /// if client.auth_token.expired() {
+    ///     client.auth()?;
+    /// }
+    /// ```
     pub fn expired(&self) -> bool {
         todo!()
     }
