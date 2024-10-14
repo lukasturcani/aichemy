@@ -1,4 +1,4 @@
-//! Tools to interact with a [`NOMAD NMR`].
+//! Tools to interact with [`NOMAD NMR`].
 //!
 //! A [`NOMAD NMR`] deployment is used by NMR labs to manage their machines
 //! and store their data in a central place and in a
@@ -10,6 +10,26 @@
 //! REST API to interact with it, which this module relies upon. The primary goal of
 //! this module is to provide an interface for downloading large datasets from the
 //! NOMAD server and turn them into data frames which can be used for machine learning.
+//!
+//! # Examples
+//!
+//! ```no_run
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use aichemy::nmr::nomad_nmr::{AutoExperimentQuery, Client};
+//! use std::fs;
+//!
+//! let mut client = Client::login(
+//!     "http://demo.nomad-nmr.uk",
+//!     "demo", // username
+//!     "dem0User", // password
+//! )?;
+//!
+//! // Download auto experiments into a zip archive.
+//! let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
+//! fs::write("experiments.zip", experiments.get()?)?;
+//! # Ok(())
+//! # }
+//! ```
 //!
 //! [`NOMAD NMR`]: https://www.nomad-nmr.uk
 
