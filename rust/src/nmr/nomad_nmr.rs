@@ -213,7 +213,55 @@ impl Client {
         Ok(self)
     }
 
-    pub fn auto_experiments(&self, query: AutoExperimentQuery) -> Result<AutoExperiments, Error> {
+    /// Get a list of auto experiments.
+    ///
+    /// # Examples
+    ///
+    /// ## Get all auto experiments
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut client = aichemy::nmr::nomad_nmr::Client {
+    /// #     inner: reqwest::blocking::Client::new(),
+    /// #     auth_token: aichemy::nmr::nomad_nmr::AuthToken {
+    /// #         token: "token".to_string(),
+    /// #         expiry_time: chrono::Utc::now(),
+    /// #     },
+    /// #     url: url::Url::parse("https://example.com").unwrap(),
+    /// # };
+    /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
+    /// let auto_experiments = client.auto_experiments(AutoExperimentQuery::default())?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Get auto experiments matching a specific query
+    ///
+    /// ```
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let mut client = aichemy::nmr::nomad_nmr::Client {
+    /// #     inner: reqwest::blocking::Client::new(),
+    /// #     auth_token: aichemy::nmr::nomad_nmr::AuthToken {
+    /// #         token: "token".to_string(),
+    /// #         expiry_time: chrono::Utc::now(),
+    /// #     },
+    /// #     url: url::Url::parse("https://example.com").unwrap(),
+    /// # };
+    /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
+    /// let auto_experiments = client.auto_experiments(AutoExperimentQuery {
+    ///     solvent: vec!["water".to_string()],
+    ///     ..Default::default()
+    /// })?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn auto_experiments<T>(
+        &self,
+        query: AutoExperimentQuery<T>,
+    ) -> Result<AutoExperiments<'_>, Error>
+    where
+        T: AsRef<str>,
+    {
         let response = self
             .inner
             .get(self.url.join("api/v2/auto-experiments").unwrap())
@@ -232,35 +280,99 @@ impl Client {
     }
 }
 
+/// Query parameters for the [`Client::auto_experiments`] method.
+///
+/// Each `Vec` field is a list of values to match. If the field is empty, no
+/// filtering is performed. If multiple values are provided in a field,
+/// the query will match if any of the values match.
+///
+/// If multple fields are provided, both fields must match for the query to
+/// match. For example:
+/// ```
+/// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
+/// let query = AutoExperimentQuery {
+///     solvent: vec!["water", "methanol"],
+///     instrument_id: vec!["1", "2"],
+///     ..Default::default()
+/// };
+/// ```
+/// will match all auto experiments with a solvent of water or methanol AND
+/// an instrument ID of 1 or 2.
+///
+/// # Examples
+///
+/// [See here.](Client::auto_experiments#examples)
 #[derive(Debug, Clone, Default)]
-pub struct AutoExperimentQuery {
-    pub solvent: Vec<String>,
-    pub instrument_id: Vec<String>,
-    pub parameter_set: Vec<String>,
-    pub title: Vec<String>,
+pub struct AutoExperimentQuery<T> {
+    /// Filter for experiments with any of these solvents.
+    pub solvent: Vec<T>,
+    /// Filter for experiments done on any of these instruments.
+    pub instrument_id: Vec<T>,
+    /// Filter for experiments using any of these parameter sets.
+    pub parameter_set: Vec<T>,
+    /// Filter for experiments with any of these titles.
+    pub title: Vec<T>,
+    /// Filter for experiments submitted after this date.
     pub start_date: Option<DateTime<Utc>>,
+    /// Filter for experiments submitted before this date.
     pub end_date: Option<DateTime<Utc>>,
-    pub group_id: Vec<String>,
-    pub user_id: Vec<String>,
-    pub dataset_name: Vec<String>,
+    /// Filter for experiments belonging to any of these groups.
+    pub group_id: Vec<T>,
+    /// Filter for experiments created by any of these users.
+    pub user_id: Vec<T>,
+    /// Filter for experiments in any of these datasets.
+    pub dataset_name: Vec<T>,
+    /// Skip the first `offset` experiments.
     pub offset: Option<usize>,
+    /// Limit the number of experiments returned to `limit`.
     pub limit: Option<usize>,
 }
 
-impl AutoExperimentQuery {
-    fn into_query(self) -> Vec<(String, String)> {
+impl<T> AutoExperimentQuery<T>
+where
+    T: AsRef<str>,
+{
+    fn into_query(&self) -> Vec<(String, String)> {
         let mut query = vec![];
         if !self.instrument_id.is_empty() {
-            query.push(("instrumentId".to_string(), self.instrument_id.join(",")));
+            query.push((
+                "instrumentId".to_string(),
+                self.instrument_id
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
         if !self.solvent.is_empty() {
-            query.push(("solvent".to_string(), self.solvent.join(",")));
+            query.push((
+                "solvent".to_string(),
+                self.solvent
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
         if !self.parameter_set.is_empty() {
-            query.push(("paramSet".to_string(), self.parameter_set.join(",")));
+            query.push((
+                "paramSet".to_string(),
+                self.parameter_set
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
         if !self.title.is_empty() {
-            query.push(("title".to_string(), self.title.join(",")));
+            query.push((
+                "title".to_string(),
+                self.title
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
         if let Some(start_date) = self.start_date {
             query.push(("startDate".to_string(), start_date.to_rfc3339()));
@@ -269,13 +381,34 @@ impl AutoExperimentQuery {
             query.push(("endDate".to_string(), end_date.to_rfc3339()));
         }
         if !self.group_id.is_empty() {
-            query.push(("groupId".to_string(), self.group_id.join(",")));
+            query.push((
+                "groupId".to_string(),
+                self.group_id
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
         if !self.user_id.is_empty() {
-            query.push(("userId".to_string(), self.user_id.join(",")));
+            query.push((
+                "userId".to_string(),
+                self.user_id
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
         if !self.dataset_name.is_empty() {
-            query.push(("datasetName".to_string(), self.dataset_name.join(",")));
+            query.push((
+                "datasetName".to_string(),
+                self.dataset_name
+                    .iter()
+                    .map(|s| s.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
         if let Some(offset) = self.offset {
             query.push(("offset".to_string(), offset.to_string()));
