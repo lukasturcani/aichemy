@@ -499,6 +499,20 @@ pub struct AutoExperiment {
 }
 
 /// A collection of auto experiments stored in NOMAD.
+///
+/// Use this if you want to download the auto experiments as a zip archive.
+///
+/// # Examples
+/// ```no_run
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # let mut client: aichemy::nmr::nomad_nmr::Client = todo!();
+/// use std::fs;
+/// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
+/// let auto_experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
+/// fs::write("experiments.zip", auto_experiments.get()?)?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Clone)]
 pub struct AutoExperiments<'client> {
     /// The auto experiment data.
@@ -509,6 +523,10 @@ pub struct AutoExperiments<'client> {
 
 impl<'client> AutoExperiments<'client> {
     /// Download the auto experiments as a zip archive.
+    ///
+    /// # Examples
+    ///
+    /// [See here.](AutoExperiments#examples)
     pub fn get(self) -> Result<Bytes, Error> {
         self.client
             .inner
