@@ -30,4 +30,9 @@ check:
   (set -x; cargo test --doc)
   test $? = 0
 
+
+  #TODO: check if building docs generated separates warnings and if you can turn them to errors
+  #TODO: Fix existing doc building warnigns
+
+
   test $error = 0
