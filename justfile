@@ -30,7 +30,7 @@ check:
   test $? = 0
 
   echo
-  (set -x; cargo test --doc)
+  (set -x; cargo test --doc --workspace --exclude py-aichemy)
   test $? = 0
 
   echo
