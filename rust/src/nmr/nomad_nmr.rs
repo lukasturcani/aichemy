@@ -57,7 +57,7 @@ impl AuthToken {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let mut client = aichemy::nmr::nomad_nmr::Client {
     /// #     inner: reqwest::blocking::Client::new(),
@@ -86,7 +86,7 @@ impl AuthToken {
 /// Use the methods on the client to send requests to the NOMAD server.
 ///
 /// # Examples
-/// ```rust,no_run
+/// ```no_run
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// use aichemy::nmr::nomad_nmr::{AutoExperimentQuery, Client};
 /// use std::fs;
