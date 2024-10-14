@@ -26,7 +26,7 @@ check:
   test $? = 0
 
   echo
-  (set -x; cargo test --all-features --all-targets)
+  (set -x; cargo test --all-features --all-targets --workspace --exclude py-aichemy)
   test $? = 0
 
   echo
