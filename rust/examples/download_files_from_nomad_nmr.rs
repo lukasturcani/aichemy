@@ -21,7 +21,7 @@ struct Cli {
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
     let client = Client::login(cli.url, cli.username, cli.password)?;
-    let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
+    let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
     fs::write(cli.download_path, experiments.get()?)?;
     Ok(())
 }

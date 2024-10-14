@@ -98,7 +98,7 @@ impl AuthToken {
 /// )?;
 ///
 /// // Download auto experiments into a zip archive.
-/// let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
+/// let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
 /// fs::write("experiments.zip", experiments.get()?)?;
 /// # Ok(())
 /// # }
@@ -219,37 +219,25 @@ impl Client {
     ///
     /// ## Get all auto experiments
     ///
-    /// ```
+    /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let mut client = aichemy::nmr::nomad_nmr::Client {
-    /// #     inner: reqwest::blocking::Client::new(),
-    /// #     auth_token: aichemy::nmr::nomad_nmr::AuthToken {
-    /// #         token: "token".to_string(),
-    /// #         expiry_time: chrono::Utc::now(),
-    /// #     },
-    /// #     url: url::Url::parse("https://example.com").unwrap(),
-    /// # };
+    /// # let mut client: aichemy::nmr::nomad_nmr::Client = todo!();
     /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
-    /// let auto_experiments = client.auto_experiments(AutoExperimentQuery::default())?;
+    /// let auto_experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
     /// # Ok(())
     /// # }
     /// ```
     ///
     /// ## Get auto experiments matching a specific query
     ///
-    /// ```
+    /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let mut client = aichemy::nmr::nomad_nmr::Client {
-    /// #     inner: reqwest::blocking::Client::new(),
-    /// #     auth_token: aichemy::nmr::nomad_nmr::AuthToken {
-    /// #         token: "token".to_string(),
-    /// #         expiry_time: chrono::Utc::now(),
-    /// #     },
-    /// #     url: url::Url::parse("https://example.com").unwrap(),
-    /// # };
+    /// # let mut client: aichemy::nmr::nomad_nmr::Client = todo!();
     /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
-    /// let auto_experiments = client.auto_experiments(AutoExperimentQuery {
-    ///     solvent: vec!["water".to_string()],
+    /// let auto_experiments = client.auto_experiments(&AutoExperimentQuery {
+    ///     solvent: vec!["CDCl3"],
+    ///     instrument_id: vec!["1", "2", "4"],
+    ///     user_id: vec!["foo", "bar"],
     ///     ..Default::default()
     /// })?;
     /// # Ok(())
@@ -257,7 +245,7 @@ impl Client {
     /// ```
     pub fn auto_experiments<T>(
         &self,
-        query: AutoExperimentQuery<T>,
+        query: &AutoExperimentQuery<T>,
     ) -> Result<AutoExperiments<'_>, Error>
     where
         T: AsRef<str>,
@@ -265,7 +253,7 @@ impl Client {
         let response = self
             .inner
             .get(self.url.join("api/v2/auto-experiments").unwrap())
-            .query(&query.into_query())
+            .query(&query.to_query())
             .bearer_auth(self.auth_token.token.clone())
             .send()
             .map_err(|source| Error::Request { source })?
@@ -328,11 +316,17 @@ pub struct AutoExperimentQuery<T> {
     pub limit: Option<usize>,
 }
 
+impl AutoExperimentQuery<String> {
+    pub fn empty() -> Self {
+        Self::default()
+    }
+}
+
 impl<T> AutoExperimentQuery<T>
 where
     T: AsRef<str>,
 {
-    fn into_query(&self) -> Vec<(String, String)> {
+    fn to_query(&self) -> Vec<(String, String)> {
         let mut query = vec![];
         if !self.instrument_id.is_empty() {
             query.push((

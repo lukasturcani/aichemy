@@ -11,7 +11,7 @@ fn download_all() -> Result<(), Box<dyn std::error::Error>> {
         "foo",
     )?;
 
-    let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
+    let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
 
     let mut file = tempfile::tempfile()?;
     file.write_all(experiments.get()?.as_ref())?;
