@@ -92,14 +92,15 @@ impl AuthToken {
 /// use std::fs;
 ///
 /// let mut client = Client::login(
-///     "https://my-nomad-server.com",
-///     "username",
-///     "password",
+///     "http://demo.nomad-nmr.uk",
+///     "demo", // username
+///     "dem0User", // password
 /// )?;
 ///
 /// // Download auto experiments into a zip archive.
 /// let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
 /// fs::write("experiments.zip", experiments.get()?)?;
+/// # fs::remove_file("experiments.zip")?;
 /// # Ok(())
 /// # }
 /// ```
