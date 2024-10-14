@@ -92,7 +92,7 @@ impl AuthToken {
 /// use std::fs;
 ///
 /// let mut client = Client::login(
-///     "https://example.com",
+///     "https://my-nomad-server.com",
 ///     "username",
 ///     "password",
 /// )?;
@@ -119,6 +119,9 @@ pub struct Client {
 
 impl Client {
     /// Create a new client by logging into the NOMAD server.
+    ///
+    /// # Examples
+    /// [See here.](Client#examples)
     pub fn login(
         url: impl IntoUrl,
         username: impl Into<String>,
