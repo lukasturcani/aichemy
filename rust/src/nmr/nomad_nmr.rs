@@ -82,6 +82,27 @@ impl AuthToken {
 }
 
 /// Client for interacting with the NOMAD server.
+///
+/// Use the methods on the client to send requests to the NOMAD server.
+///
+/// # Examples
+/// ```rust
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use aichemy::nmr::nomad_nmr::Client;
+/// use std::fs;
+///
+/// let mut client = Client::login(
+///     "https://example.com",
+///     "username",
+///     "password",
+/// )?;
+///
+/// // Download auto experiments into a zip archive.
+/// let experiments = client.auto_experiments(AutoExperimentQuery::default())?;
+/// fs::write("experiments.zip", experiments.get()?)?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Clone)]
 pub struct Client {
     /// The unerlying [reqwest::blocking::Client].
@@ -94,6 +115,95 @@ pub struct Client {
     pub password: String,
     /// The authentication token to use for requests.
     pub auth_token: AuthToken,
+}
+
+impl Client {
+    /// Create a new client by logging into the NOMAD server.
+    pub fn login(
+        url: impl IntoUrl,
+        username: impl Into<String>,
+        password: impl Into<String>,
+    ) -> Result<Self, Error> {
+        let username = username.into();
+        let password = password.into();
+        let url = url
+            .into_url()
+            .map_err(|source| Error::InvalidUrl { source })?;
+        let login_url = url.join("api/auth/login").unwrap();
+        let client = reqwest::blocking::Client::new();
+        let response = client
+            .post(login_url)
+            .json(&json!({
+                "username": username,
+                "password": password,
+            }))
+            .send()
+            .map_err(|source| Error::Request { source })?
+            .error_for_status()
+            .map_err(|source| Error::Request { source })?;
+        let mut expiry_time = DateTime::parse_from_rfc2822(
+            &response.headers().get("date").unwrap().to_str().unwrap()[5..],
+        )
+        .unwrap()
+        .into();
+        let response = response.json::<AuthResponse>().unwrap();
+        expiry_time += Duration::seconds(response.expires_in);
+        Ok(Self {
+            inner: client,
+            url,
+            username,
+            password,
+            auth_token: AuthToken {
+                token: response.token,
+                expiry_time,
+            },
+        })
+    }
+
+    pub fn auth(&mut self) -> Result<&mut Self, Error> {
+        let login_url = self.url.join("api/auth/login").unwrap();
+        let response = self
+            .inner
+            .post(login_url)
+            .json(&json!({
+                "username": self.username,
+                "password": self.password,
+            }))
+            .send()
+            .map_err(|source| Error::Request { source })?
+            .error_for_status()
+            .map_err(|source| Error::Request { source })?;
+        let mut expiry_time = DateTime::parse_from_rfc2822(
+            &response.headers().get("date").unwrap().to_str().unwrap()[5..],
+        )
+        .unwrap()
+        .into();
+        let response = response.json::<AuthResponse>().unwrap();
+        expiry_time += Duration::seconds(response.expires_in);
+        self.auth_token = AuthToken {
+            token: response.token,
+            expiry_time,
+        };
+        Ok(self)
+    }
+
+    pub fn auto_experiments(&self, query: AutoExperimentQuery) -> Result<AutoExperiments, Error> {
+        let response = self
+            .inner
+            .get(self.url.join("api/v2/auto-experiments").unwrap())
+            .query(&query.into_query())
+            .bearer_auth(self.auth_token.token.clone())
+            .send()
+            .map_err(|source| Error::Request { source })?
+            .error_for_status()
+            .map_err(|source| Error::Request { source })?
+            .json::<Vec<AutoExperiment>>()
+            .map_err(|source| Error::Request { source })?;
+        Ok(AutoExperiments {
+            inner: response,
+            client: self,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -209,94 +319,6 @@ pub struct AutoExperiment {
         deserialize_with = "deserialize_datetime"
     )]
     pub submitted_at: Option<DateTime<Utc>>,
-}
-
-impl Client {
-    pub fn login(
-        url: impl IntoUrl,
-        username: impl Into<String>,
-        password: impl Into<String>,
-    ) -> Result<Self, Error> {
-        let username = username.into();
-        let password = password.into();
-        let url = url
-            .into_url()
-            .map_err(|source| Error::InvalidUrl { source })?;
-        let login_url = url.join("api/auth/login").unwrap();
-        let client = reqwest::blocking::Client::new();
-        let response = client
-            .post(login_url)
-            .json(&json!({
-                "username": username,
-                "password": password,
-            }))
-            .send()
-            .map_err(|source| Error::Request { source })?
-            .error_for_status()
-            .map_err(|source| Error::Request { source })?;
-        let mut expiry_time = DateTime::parse_from_rfc2822(
-            &response.headers().get("date").unwrap().to_str().unwrap()[5..],
-        )
-        .unwrap()
-        .into();
-        let response = response.json::<AuthResponse>().unwrap();
-        expiry_time += Duration::seconds(response.expires_in);
-        Ok(Self {
-            inner: client,
-            url,
-            username,
-            password,
-            auth_token: AuthToken {
-                token: response.token,
-                expiry_time,
-            },
-        })
-    }
-
-    pub fn auth(&mut self) -> Result<&mut Self, Error> {
-        let login_url = self.url.join("api/auth/login").unwrap();
-        let response = self
-            .inner
-            .post(login_url)
-            .json(&json!({
-                "username": self.username,
-                "password": self.password,
-            }))
-            .send()
-            .map_err(|source| Error::Request { source })?
-            .error_for_status()
-            .map_err(|source| Error::Request { source })?;
-        let mut expiry_time = DateTime::parse_from_rfc2822(
-            &response.headers().get("date").unwrap().to_str().unwrap()[5..],
-        )
-        .unwrap()
-        .into();
-        let response = response.json::<AuthResponse>().unwrap();
-        expiry_time += Duration::seconds(response.expires_in);
-        self.auth_token = AuthToken {
-            token: response.token,
-            expiry_time,
-        };
-        Ok(self)
-    }
-
-    pub fn auto_experiments(&self, query: AutoExperimentQuery) -> Result<AutoExperiments, Error> {
-        let response = self
-            .inner
-            .get(self.url.join("api/v2/auto-experiments").unwrap())
-            .query(&query.into_query())
-            .bearer_auth(self.auth_token.token.clone())
-            .send()
-            .map_err(|source| Error::Request { source })?
-            .error_for_status()
-            .map_err(|source| Error::Request { source })?
-            .json::<Vec<AutoExperiment>>()
-            .map_err(|source| Error::Request { source })?;
-        Ok(AutoExperiments {
-            inner: response,
-            client: self,
-        })
-    }
 }
 
 #[derive(Debug, Clone)]
