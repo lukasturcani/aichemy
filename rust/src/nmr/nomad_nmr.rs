@@ -289,7 +289,7 @@ impl Client {
 ///
 /// # Examples
 ///
-/// [See here.](Client::auto_experiments#examples)
+/// [See here.](Client::auto_experiments)
 #[derive(Debug, Clone, Default)]
 pub struct AutoExperimentQuery<T> {
     /// Filter for experiments with any of these solvents.
@@ -317,6 +317,9 @@ pub struct AutoExperimentQuery<T> {
 }
 
 impl AutoExperimentQuery<String> {
+    /// Create a new empty query.
+    ///
+    /// This query will match all experiments.
     pub fn empty() -> Self {
         Self::default()
     }
