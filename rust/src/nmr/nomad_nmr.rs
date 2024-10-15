@@ -1,4 +1,4 @@
-//! Tools to interact with [`NOMAD NMR`].
+//! Tools to interact with NOMAD NMR.
 //!
 //! A [`NOMAD NMR`] deployment is used by NMR labs to manage their machines
 //! and store their data in a central place and in a
