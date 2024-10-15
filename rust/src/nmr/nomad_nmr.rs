@@ -26,7 +26,7 @@
 //!
 //! // Download auto experiments into a zip archive.
 //! let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
-//! fs::write("experiments.zip", experiments.get()?)?;
+//! fs::write("experiments.zip", experiments.download()?)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -119,7 +119,7 @@ impl AuthToken {
 ///
 /// // Download auto experiments into a zip archive.
 /// let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
-/// fs::write("experiments.zip", experiments.get()?)?;
+/// fs::write("experiments.zip", experiments.download()?)?;
 /// # Ok(())
 /// # }
 /// ```
@@ -529,7 +529,7 @@ pub struct AutoExperiment {
 /// use std::fs;
 /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
 /// let auto_experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
-/// fs::write("experiments.zip", auto_experiments.get()?)?;
+/// fs::write("experiments.zip", auto_experiments.download()?)?;
 /// # Ok(())
 /// # }
 /// ```
@@ -547,7 +547,7 @@ impl<'client> AutoExperiments<'client> {
     /// # Examples
     ///
     /// [See here.](AutoExperiments#examples)
-    pub fn get(self) -> Result<Bytes, Error> {
+    pub fn download(self) -> Result<Bytes, Error> {
         self.client
             .inner
             .post(

@@ -14,7 +14,7 @@ fn download_all() -> Result<(), Box<dyn std::error::Error>> {
     let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
 
     let mut file = tempfile::tempfile()?;
-    file.write_all(experiments.get()?.as_ref())?;
+    file.write_all(experiments.download()?.as_ref())?;
     file.seek(SeekFrom::Start(0))?;
 
     let expected_files = {
