@@ -177,7 +177,9 @@ impl Client {
         )
         .unwrap()
         .into();
-        let response = response.json::<AuthResponse>().unwrap();
+        let response = response
+            .json::<AuthResponse>()
+            .expect("auth response does not match expected format");
         expiry_time += Duration::seconds(response.expires_in);
         Ok(Self {
             inner: client,
@@ -239,7 +241,9 @@ impl Client {
         )
         .unwrap()
         .into();
-        let response = response.json::<AuthResponse>().unwrap();
+        let response = response
+            .json::<AuthResponse>()
+            .expect("auth response does not match expected format");
         expiry_time += Duration::seconds(response.expires_in);
         self.auth_token = AuthToken {
             token: response.token,
@@ -302,7 +306,7 @@ impl Client {
             .error_for_status()
             .map_err(|source| Error::Request { source })?
             .json::<Vec<AutoExperiment>>()
-            .unwrap();
+            .expect("auto experiments response does not match expected format");
         Ok(AutoExperiments {
             inner: response,
             client: self,
@@ -567,8 +571,10 @@ impl<'client> AutoExperiments<'client> {
     /// Download the auto experiments as a zip archive.
     ///
     /// # Examples
-    ///
     /// [See here.](AutoExperiments#examples)
+    ///
+    /// # Errors
+    /// This method will return an error if the request fails.
     pub fn download(self) -> Result<Bytes, Error> {
         self.client
             .inner
