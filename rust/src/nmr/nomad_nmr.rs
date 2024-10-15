@@ -142,6 +142,14 @@ impl Client {
     ///
     /// # Examples
     /// [See here.](Client#examples)
+    ///
+    /// # Errors
+    /// This method will return an error if the URL is invalid or if the
+    /// authentication request fails.
+    ///
+    /// # Panics
+    /// This method will panic if the response from the server does not
+    /// match the expected format.
     pub fn login(
         url: impl IntoUrl,
         username: impl Into<String>,
@@ -206,6 +214,13 @@ impl Client {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    /// This method will return an error if the authentication request fails.
+    ///
+    /// # Panics
+    /// This method will panic if the response from the server does not
+    /// match the expected format.
     pub fn auth(&mut self) -> Result<&mut Self, Error> {
         let login_url = self.url.join("api/auth/login").unwrap();
         let response = self
@@ -263,6 +278,13 @@ impl Client {
     /// # Ok(())
     /// # }
     /// ```
+    ///
+    /// # Errors
+    /// This method will return an error if the request fails.
+    ///
+    /// # Panics
+    /// This method will panic if the response from the server does not
+    /// match the expected format.
     pub fn auto_experiments<T>(
         &self,
         query: &AutoExperimentQuery<T>,
@@ -280,7 +302,7 @@ impl Client {
             .error_for_status()
             .map_err(|source| Error::Request { source })?
             .json::<Vec<AutoExperiment>>()
-            .map_err(|source| Error::Request { source })?;
+            .unwrap();
         Ok(AutoExperiments {
             inner: response,
             client: self,
