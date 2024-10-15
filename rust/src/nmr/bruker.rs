@@ -4,10 +4,12 @@ use std::path::{Path, PathBuf};
 
 use thiserror::Error;
 
+/// Error which may occur when interacting with Bruker data.
 #[derive(Error, Debug)]
 pub enum Error {
+    /// The Bruker data could not be found.
     #[error("Could not find Bruker data in {0}")]
-    NotFound(PathBuf),
+    DataNotFound(PathBuf),
 }
 
 pub fn read_pdata(dir: impl AsRef<Path>) -> Result<(), Error> {
@@ -19,7 +21,9 @@ pub fn read_pdata(dir: impl AsRef<Path>) -> Result<(), Error> {
     let data_dir = data_dirs
         .iter()
         .find(|d| d.exists())
-        .ok_or_else(|| Error::NotFound(dir.as_ref().into()))?;
+        .ok_or_else(|| Error::DataNotFound(dir.as_ref().into()))?;
 
     Ok(())
 }
+
+fn read_procs_file(dir: impl AsRef<Path>) -> Result<(), Error> {}
