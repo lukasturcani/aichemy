@@ -36,7 +36,7 @@
 use bytes::Bytes;
 use chrono::{DateTime, Duration, Utc};
 use reqwest::{IntoUrl, Url};
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::json;
 use thiserror::Error;
 
@@ -64,7 +64,7 @@ pub enum Error {
 ///
 /// A token must be used to authenticate requests to the NOMAD server. Generally
 /// produced by the [Client::login] and [Client::auth] methods.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AuthToken {
     /// Time at which the token expires.
     pub expiry_time: DateTime<Utc>,
@@ -310,7 +310,7 @@ impl Client {
 /// # Examples
 ///
 /// [See here.](Client::auto_experiments)
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]
 pub struct AutoExperimentQuery<T> {
     /// Filter for experiments with any of these solvents.
     pub solvent: Vec<T>,
@@ -458,23 +458,23 @@ where
 }
 
 /// A unique id for an auto experiment.
-#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash, Serialize)]
 pub struct AutoExperimentId(pub String);
 
 /// A unique id for an instrument.
-#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash, Serialize)]
 pub struct InstrumentId(pub String);
 
 /// A unique id for a NOMAD user.
-#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash, Serialize)]
 pub struct UserId(pub String);
 
 /// A unique id for a group.
-#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash, Serialize)]
 pub struct GroupId(pub String);
 
 /// Data about an auto experiment stored in NOMAD.
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Hash)]
 pub struct AutoExperiment {
     /// The unique id of the auto experiment.
     pub id: AutoExperimentId,
