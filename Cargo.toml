@@ -10,6 +10,12 @@ members = [
 version = "0.1.0"
 edition = "2021"
 authors = ["Lukas Turcani <lukasturcani93@gmail.com>"]
+description = "Make AI in chemistry simple!"
+license = "MIT"
+homepage = "https://github.com/lukasturcani/aichemy"
+repository = "https://github.com/lukasturcani/aichemy"
+keywords = ["ai", "chemistry", "machine-learning", "ml"]
+categories = ["science"]
 
 [profile.release]
 lto = true
