@@ -60,6 +60,19 @@ fn inline_comment(input: &str) -> IResult<&str, ()> {
     value((), pair(tag("$$"), is_not("\n\r")))(input)
 }
 
+fn multi_line_comment(input: &str) -> IResult<&str, ()> {
+    value(
+        (),
+        pair(
+            tag("##="),
+            take_until(alt((
+                value((), typed_data_label),
+                value((), untyped_data_label),
+            ))),
+        ),
+    )(input)
+}
+
 fn text_data_set(input: &str) -> IResult<&str, TextDataSet> {
     todo!()
 }
