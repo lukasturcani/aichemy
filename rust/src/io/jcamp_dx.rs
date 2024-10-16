@@ -124,8 +124,8 @@ mod tests {
     #[test]
     fn test_typed_data_label() {
         let (remaining, output) =
-            typed_data_label("##O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
-        assert_eq!(remaining, "");
+            typed_data_label("##.O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
+        assert_eq!(remaining, "SOLID_ANODE");
         assert_eq!(output, TypedDataLabel("OBSERVATION232TYPE".into()));
     }
 
