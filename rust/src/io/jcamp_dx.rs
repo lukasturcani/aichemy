@@ -43,12 +43,12 @@ struct AsdfDataSet(String);
 fn data_label_name(input: &str) -> IResult<&str, String> {
     let (remaining, (_, output)) =
         consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_")))))(input)?;
-    Ok((remaining, output.join("")))
+    Ok((remaining, output.join("").to_uppercase()))
 }
 
 fn untyped_data_label(input: &str) -> IResult<&str, UntypedDataLabel> {
     let (remaining, output) = delimited(tag("##"), data_label_name, tag("="))(input)?;
-    Ok((remaining, UntypedDataLabel(output.to_uppercase())))
+    Ok((remaining, UntypedDataLabel(output)))
 }
 
 fn typed_data_label(input: &str) -> IResult<&str, TypedDataLabel> {
@@ -60,18 +60,18 @@ fn inline_comment(input: &str) -> IResult<&str, ()> {
     value((), pair(tag("$$"), is_not("\n\r")))(input)
 }
 
-fn multi_line_comment(input: &str) -> IResult<&str, ()> {
-    value(
-        (),
-        pair(
-            tag("##="),
-            take_until(alt((
-                value((), typed_data_label),
-                value((), untyped_data_label),
-            ))),
-        ),
-    )(input)
-}
+// fn multi_line_comment(input: &str) -> IResult<&str, ()> {
+//     value(
+//         (),
+//         pair(
+//             tag("##="),
+//             take_until(alt((
+//                 value((), typed_data_label),
+//                 value((), untyped_data_label),
+//             ))),
+//         ),
+//     )(input)
+// }
 
 fn text_data_set(input: &str) -> IResult<&str, TextDataSet> {
     todo!()
