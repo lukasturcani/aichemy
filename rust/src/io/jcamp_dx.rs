@@ -1,8 +1,8 @@
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, take_until},
-    character::complete::{alphanumeric1, one_of},
-    combinator::{consumed, recognize, value},
+    character::complete::{alphanumeric0, alphanumeric1, not_line_ending, one_of},
+    combinator::{consumed, eof, not, peek, recognize, value},
     multi::{many0, many1},
     sequence::{delimited, pair, terminated},
     IResult,
@@ -57,21 +57,24 @@ fn typed_data_label(input: &str) -> IResult<&str, TypedDataLabel> {
 }
 
 fn inline_comment(input: &str) -> IResult<&str, ()> {
-    value((), pair(tag("$$"), is_not("\n\r")))(input)
+    value((), pair(tag("$$"), not_line_ending))(input)
 }
 
-// fn multi_line_comment(input: &str) -> IResult<&str, ()> {
-//     value(
-//         (),
-//         pair(
-//             tag("##="),
-//             take_until(alt((
-//                 value((), typed_data_label),
-//                 value((), untyped_data_label),
-//             ))),
-//         ),
-//     )(input)
-// }
+fn multi_line_comment(input: &str) -> IResult<&str, ()> {
+    value(
+        (),
+        pair(
+            tag("##="),
+            terminated(
+                not(eof),
+                peek(alt((
+                    value((), typed_data_label),
+                    value((), untyped_data_label),
+                ))),
+            ),
+        ),
+    )(input)
+}
 
 fn text_data_set(input: &str) -> IResult<&str, TextDataSet> {
     todo!()
@@ -133,5 +136,29 @@ mod tests {
     fn test_inline_comment() {
         let (remaining, _) = inline_comment("$$SOME COMMENT\n").unwrap();
         assert_eq!(remaining, "\n");
+    }
+
+    #[test]
+    fn test_multiline_comment() {
+        let (remaining, _) = multi_line_comment(
+            "##=this is a commnt
+            comment
+            comment
+            ##TITLE=
+            ",
+        )
+        .unwrap();
+        assert_eq!(remaining, "##TITLE=")
+    }
+
+    fn parser(input: &str) -> IResult<&str, ()> {
+        terminated(not(eof), tag("X"))(input)
+    }
+
+    #[test]
+    fn test_terminating() {
+        let (remaining, output) = parser("asdfX").unwrap();
+        assert_eq!(remaining, "");
+        // assert_eq!(output, "asdf");
     }
 }
