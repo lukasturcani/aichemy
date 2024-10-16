@@ -1,9 +1,9 @@
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, take_until},
-    character::complete::{alphanumeric0, alphanumeric1, not_line_ending, one_of},
+    character::complete::{alphanumeric0, alphanumeric1, anychar, not_line_ending, one_of},
     combinator::{consumed, eof, not, peek, recognize, value},
-    multi::{many0, many1},
+    multi::{many0, many1, many_till},
     sequence::{delimited, pair, terminated},
     IResult,
 };
@@ -63,15 +63,12 @@ fn inline_comment(input: &str) -> IResult<&str, ()> {
 fn multi_line_comment(input: &str) -> IResult<&str, ()> {
     value(
         (),
-        pair(
-            tag("##="),
-            terminated(
-                not(eof),
-                peek(alt((
-                    value((), typed_data_label),
-                    value((), untyped_data_label),
-                ))),
-            ),
+        many_till(
+            value((), anychar),
+            peek(alt((
+                value((), untyped_data_label),
+                value((), typed_data_label),
+            ))),
         ),
     )(input)
 }
@@ -144,21 +141,9 @@ mod tests {
             "##=this is a commnt
             comment
             comment
-            ##TITLE=
-            ",
+            ##TITLE= ",
         )
         .unwrap();
-        assert_eq!(remaining, "##TITLE=")
-    }
-
-    fn parser(input: &str) -> IResult<&str, ()> {
-        terminated(not(eof), tag("X"))(input)
-    }
-
-    #[test]
-    fn test_terminating() {
-        let (remaining, output) = parser("asdfX").unwrap();
-        assert_eq!(remaining, "");
-        // assert_eq!(output, "asdf");
+        assert_eq!(remaining, "##TITLE= ")
     }
 }
