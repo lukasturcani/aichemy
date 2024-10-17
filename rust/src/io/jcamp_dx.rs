@@ -1,7 +1,9 @@
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, take_until},
-    character::complete::{alphanumeric0, alphanumeric1, anychar, not_line_ending, one_of},
+    character::complete::{
+        alphanumeric0, alphanumeric1, anychar, line_ending, not_line_ending, one_of,
+    },
     combinator::{consumed, eof, not, peek, recognize, value},
     multi::{many0, many1, many_till},
     sequence::{delimited, pair, terminated},
@@ -74,11 +76,13 @@ fn multi_line_comment(input: &str) -> IResult<&str, ()> {
 }
 
 fn text_data_set(input: &str) -> IResult<&str, TextDataSet> {
-    todo!()
+    let (remaining, (output, _)) = many_till(anychar, peek(line_ending))(input)?;
+    Ok((remaining, TextDataSet(String::from_iter(output))))
 }
 
 fn string_data_set(input: &str) -> IResult<&str, StringDataSet> {
-    todo!()
+    let (remaining, output) = alphanumeric1(input)?;
+    Ok((remaining, StringDataSet(output.into())))
 }
 
 fn affn_float_data_set(input: &str) -> IResult<&str, AffnFloatDataSet> {
@@ -127,6 +131,20 @@ mod tests {
             typed_data_label("##.O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
         assert_eq!(output, TypedDataLabel("OBSERVATION232TYPE".into()));
+    }
+
+    #[test]
+    fn test_text_data_set() {
+        let (remaining, output) = text_data_set("asd\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, TextDataSet("asd".into()));
+    }
+
+    #[test]
+    fn test_string_data_set() {
+        let (remaining, output) = string_data_set("asd\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, StringDataSet("asd".into()));
     }
 
     #[test]
