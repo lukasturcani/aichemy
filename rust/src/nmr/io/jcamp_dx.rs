@@ -27,26 +27,27 @@ pub enum Value {
     Text(String),
     Number(f64),
     Array(Vec<f64>),
+    Table { xs: Vec<f64>, ys: Vec<f64> },
 }
 
 fn data_label_name(input: &str) -> IResult<&str, String> {
-    let (remaining, (dollar, (_, label_name))) = pair(
-        opt(tag("$")),
+    let (remaining, (prefix, (_, label_name))) = pair(
+        opt(one_of("$.")),
         consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_"))))),
     )(input)?;
     let label_name = label_name.join("").to_uppercase();
     Ok((
         remaining,
-        if dollar.is_some() {
-            format!("${label_name}")
-        } else {
+        format!(
+            "{}{}",
+            prefix.map_or("".into(), |x| x.to_string()),
             label_name
-        },
+        ),
     ))
 }
 
 fn data_label(input: &str) -> IResult<&str, String> {
-    delimited(pair(tag("##"), opt(tag("."))), data_label_name, tag("="))(input)
+    delimited(tag("##"), data_label_name, tag("="))(input)
 }
 
 fn labeled_data_record(input: &str) -> IResult<&str, (String, Value)> {
@@ -88,6 +89,18 @@ fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
     let (remaning, output) = double(input)?;
     Ok((remaning, Value::Number(output)))
 }
+
+fn asdf_data_set_line(input: &str) -> IResult<&str, (f64, Vec<f64>)> {
+    pair(double, many0(double))(input)
+}
+
+// fn asdf_data_set(input: &str) -> IResult<&str, Value> {
+//     let (remaining, output) = preceded(
+//         preceded(tag("X++(Y..Y)"), pair(space0, line_ending)),
+//         separated_list0(line_ending, asdf_data_set_line),
+//     )(input)?;
+//     Ok((remaining, Value::Table(output)))
+// }
 
 fn array_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, output) = preceded(
@@ -132,7 +145,7 @@ mod tests {
 
         let (remaining, output) = data_label("##.O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
-        assert_eq!(output, "OBSERVATION232TYPE".to_string());
+        assert_eq!(output, ".OBSERVATION232TYPE".to_string());
 
         let (remaining, output) = data_label("##$O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
@@ -162,7 +175,7 @@ mod tests {
         let (remaining, (label, value)) =
             labeled_data_record("##.OBSERVATION232TYPE= SOLID_ANODE\n").unwrap();
         assert_eq!(remaining, "\n");
-        assert_eq!(label, "OBSERVATION232TYPE");
+        assert_eq!(label, ".OBSERVATION232TYPE");
         assert_eq!(value, Value::Text("SOLID_ANODE".into()));
 
         let (remaining, (label, value)) =
@@ -225,6 +238,19 @@ mod tests {
         assert_eq!(label, "$OBSERVATION232TYPE");
         assert_eq!(value, Value::Array(vec![1., 2., 3., 4.]));
     }
+
+    // #[test]
+    // fn test_asdf_data_set() {
+    //     let (remaining, output) = asdf_data_set(
+    //         "(X++(Y..Y))\n\
+    //         16383 +2259260-5242968-7176216 \n\
+    //         16374 +1757248+3559312+1108422 \n\
+    //         16365 -5429568-7119772-2065758 \n",
+    //     )
+    //     .unwrap();
+    //     assert_eq!(remaining, "\n");
+    //     assert_eq!(output, Value::Array(vec![]));
+    // }
 
     #[test]
     fn test_array() {
