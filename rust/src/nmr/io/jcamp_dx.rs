@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alphanumeric1, anychar, i64, line_ending, not_line_ending, one_of, u32},
+    character::complete::{alphanumeric1, anychar, line_ending, not_line_ending, one_of, space0},
     combinator::{consumed, opt, peek, value},
     multi::{many0, many1, many_till},
     number::complete::double,
-    sequence::{delimited, pair, terminated},
+    sequence::{delimited, pair, separated_pair, terminated},
     IResult,
 };
 
@@ -38,22 +38,34 @@ struct AsdfDataSet(String);
 #[derive(Debug, PartialEq, Clone)]
 enum Value {
     Text(String),
-    String(String),
     Number(f64),
-    IntList(Vec<i64>),
-    FloatList(Vec<f64>),
 }
 
 fn data_label_name(input: &str) -> IResult<&str, String> {
     let (remaining, dollar) = opt(tag("$"))(input)?;
-    let (remaining, (_, output)) =
+    let (remaining, (_, label_name)) =
         consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_")))))(remaining)?;
-    let label_name = output.join("").to_uppercase();
-    Ok((remaining, format!("{}{}", dollar.unwrap_or(""), label_name)))
+    Ok((
+        remaining,
+        format!(
+            "{}{}",
+            dollar.unwrap_or(""),
+            label_name.join("").to_uppercase()
+        ),
+    ))
 }
 
 fn data_label(input: &str) -> IResult<&str, String> {
     delimited(pair(tag("##"), opt(tag("."))), data_label_name, tag("="))(input)
+}
+
+fn labeled_data_record(input: &str) -> IResult<&str, (String, Value)> {
+    let (remaining, (label, value)) = separated_pair(
+        data_label,
+        space0,
+        alt((affn_number_data_set, text_data_set)),
+    )(input)?;
+    Ok((remaining, (label, value)))
 }
 
 fn inline_comment(input: &str) -> IResult<&str, ()> {
@@ -69,12 +81,10 @@ fn multi_line_comment(input: &str) -> IResult<&str, ()> {
 
 fn text_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, (output, _)) = many_till(anychar, peek(line_ending))(input)?;
-    Ok((remaining, Value::Text(String::from_iter(output))))
-}
-
-fn string_data_set(input: &str) -> IResult<&str, Value> {
-    let (remaining, output) = alphanumeric1(input)?;
-    Ok((remaining, Value::String(output.into())))
+    Ok((
+        remaining,
+        Value::Text(String::from_iter(output).trim().into()),
+    ))
 }
 
 fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
@@ -125,10 +135,54 @@ mod tests {
     }
 
     #[test]
-    fn test_string_data_set() {
-        let (remaining, output) = string_data_set("asd\n").unwrap();
+    fn test_labeled_data_record() {
+        let (remaining, (label, value)) =
+            labeled_data_record("##.OBSERVATION232TYPE= SOLID_ANODE\n").unwrap();
         assert_eq!(remaining, "\n");
-        assert_eq!(output, Value::String("asd".into()));
+        assert_eq!(label, "OBSERVATION232TYPE");
+        assert_eq!(value, Value::Text("SOLID_ANODE".into()));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##OBSERVATION232TYPE=SOLID_ANODE\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(label, "OBSERVATION232TYPE");
+        assert_eq!(value, Value::Text("SOLID_ANODE".into()));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$OBSERVATION232TYPE=     SOLID_ANODE     \n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Text("SOLID_ANODE".into()));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= 123e32  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Number(123e32));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= 123.32  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Number(123.32));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= .32  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Number(0.32));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= 32  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Number(32.));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= -32  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Number(-32.));
     }
 
     #[test]
