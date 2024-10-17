@@ -20,23 +20,8 @@ use nom::{
 #[derive(Clone, Debug)]
 pub struct Parser {}
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct Text(String);
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct StringDataSet(String);
-
-#[derive(Debug, PartialEq, Copy, Clone)]
-struct AffnFloatDataSet(f64);
-
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-struct AffnIntDataSet(i64);
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct AsdfDataSet(String);
-
 #[derive(Debug, PartialEq, Clone)]
-enum Value {
+pub enum Value {
     Text(String),
     Number(f64),
 }
