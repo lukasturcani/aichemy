@@ -5,6 +5,7 @@ use nom::{
     character::complete::{alphanumeric1, anychar, line_ending, not_line_ending, one_of},
     combinator::{consumed, opt, peek, value},
     multi::{many0, many1, many_till},
+    number::complete::double,
     sequence::{delimited, pair, terminated},
     IResult,
 };
@@ -33,6 +34,7 @@ struct AffnIntDataSet(i64);
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct AsdfDataSet(String);
 
+#[derive(Debug, PartialEq, Clone)]
 enum Value {
     Text(String),
     String(String),
@@ -63,18 +65,19 @@ fn multi_line_comment(input: &str) -> IResult<&str, ()> {
     )(input)
 }
 
-fn text_data_set(input: &str) -> IResult<&str, Text> {
+fn text_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, (output, _)) = many_till(anychar, peek(line_ending))(input)?;
-    Ok((remaining, Text(String::from_iter(output))))
+    Ok((remaining, Value::Text(String::from_iter(output))))
 }
 
-fn string_data_set(input: &str) -> IResult<&str, StringDataSet> {
+fn string_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, output) = alphanumeric1(input)?;
-    Ok((remaining, StringDataSet(output.into())))
+    Ok((remaining, Value::String(output.into())))
 }
 
-fn affn_float_data_set(input: &str) -> IResult<&str, AffnFloatDataSet> {
-    todo!()
+fn affn_float_data_set(input: &str) -> IResult<&str, Value> {
+    let (remaning, output) = double(input)?;
+    Ok((remaning, Value::Float(output)))
 }
 
 // fn affn_int_data_set(input: &str) -> IResult<&str, AffnIntDataSet> {
@@ -120,14 +123,41 @@ mod tests {
     fn test_text_data_set() {
         let (remaining, output) = text_data_set("asd\n").unwrap();
         assert_eq!(remaining, "\n");
-        assert_eq!(output, Text("asd".into()));
+        assert_eq!(output, Value::Text("asd".into()));
     }
 
     #[test]
     fn test_string_data_set() {
         let (remaining, output) = string_data_set("asd\n").unwrap();
         assert_eq!(remaining, "\n");
-        assert_eq!(output, StringDataSet("asd".into()));
+        assert_eq!(output, Value::String("asd".into()));
+    }
+
+    #[test]
+    fn test_float_data_set() {
+        let (remaining, output) = affn_float_data_set("1.23\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(1.23));
+
+        let (remaining, output) = affn_float_data_set("-1.23\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(-1.23));
+
+        let (remaining, output) = affn_float_data_set("+1.23\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(1.23));
+
+        let (remaining, output) = affn_float_data_set(".23\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(0.23));
+
+        let (remaining, output) = affn_float_data_set("0.23E+13\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(0.23e13));
+
+        let (remaining, output) = affn_float_data_set("0.23E-13\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(0.23e-13));
     }
 
     #[test]
