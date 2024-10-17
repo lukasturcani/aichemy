@@ -3,9 +3,11 @@ use std::collections::HashMap;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alphanumeric1, anychar, line_ending, not_line_ending, one_of, space0},
+    character::complete::{
+        alphanumeric1, anychar, line_ending, not_line_ending, one_of, space0, u64,
+    },
     combinator::{consumed, opt, peek, value},
-    multi::{many0, many1, many_till},
+    multi::{many0, many1, many_till, separated_list0},
     number::complete::double,
     sequence::{delimited, pair, preceded, separated_pair, terminated},
     IResult,
@@ -24,6 +26,7 @@ pub struct Parser {}
 pub enum Value {
     Text(String),
     Number(f64),
+    Array(Vec<f64>),
 }
 
 fn data_label_name(input: &str) -> IResult<&str, String> {
@@ -85,18 +88,13 @@ fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
     Ok((remaning, Value::Number(output)))
 }
 
-// fn asdf_data_set_value(input: &str) -> IResult<&str, Value> {
-//     todo!()
-// }
-
-// fn asdf_data_set(input: &str) -> IResult<&str, Value> {
-//     let (remaining, output) = separated_pair(
-//         tag("X++(Y..Y)"),
-//         pair(space0, line_ending),
-//         asdf_data_set_value,
-//     )?;
-//     todo!()
-// }
+fn array(input: &str) -> IResult<&str, Value> {
+    let (remaining, output) = preceded(
+        preceded(delimited(u64, tag(".."), u64), pair(space0, line_ending)),
+        separated_list0(space0, double),
+    )(input)?;
+    Ok((remaining, Value::Array(output)))
+}
 
 impl Parser {
     fn new() -> Self {
@@ -208,6 +206,13 @@ mod tests {
         assert_eq!(remaining, "  \n");
         assert_eq!(label, "$OBSERVATION232TYPE");
         assert_eq!(value, Value::Text("hello\n  world".into()));
+    }
+
+    #[test]
+    fn test_array() {
+        let (remaining, output) = array("0..3\n1 2 3    \n").unwrap();
+        assert_eq!(remaining, "    \n");
+        assert_eq!(output, Value::Array(vec![1., 2., 3.]));
     }
 
     #[test]
