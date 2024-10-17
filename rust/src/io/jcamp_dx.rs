@@ -1,10 +1,9 @@
+use std::collections::HashMap;
+
 use nom::{
-    branch::alt,
-    bytes::complete::{is_not, tag, take_until},
-    character::complete::{
-        alphanumeric0, alphanumeric1, anychar, line_ending, not_line_ending, one_of,
-    },
-    combinator::{consumed, eof, not, peek, recognize, value},
+    bytes::complete::tag,
+    character::complete::{alphanumeric1, anychar, line_ending, not_line_ending, one_of},
+    combinator::{consumed, opt, peek, value},
     multi::{many0, many1, many_till},
     sequence::{delimited, pair, terminated},
     IResult,
@@ -22,13 +21,10 @@ pub struct Parser {}
 pub struct JcampDx;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-struct UntypedDataLabel(String);
+struct DataLabel(String);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-struct TypedDataLabel(String);
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct TextDataSet(String);
+struct Text(String);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct StringDataSet(String);
@@ -42,20 +38,25 @@ struct AffnIntDataSet(i64);
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct AsdfDataSet(String);
 
+enum Value {
+    Text(String),
+    String(String),
+    Float(f64),
+    Int(i64),
+    IntList(Vec<i64>),
+    FloatList(Vec<f64>),
+}
+
 fn data_label_name(input: &str) -> IResult<&str, String> {
     let (remaining, (_, output)) =
         consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_")))))(input)?;
     Ok((remaining, output.join("").to_uppercase()))
 }
 
-fn untyped_data_label(input: &str) -> IResult<&str, UntypedDataLabel> {
-    let (remaining, output) = delimited(tag("##"), data_label_name, tag("="))(input)?;
-    Ok((remaining, UntypedDataLabel(output)))
-}
-
-fn typed_data_label(input: &str) -> IResult<&str, TypedDataLabel> {
-    let (remaining, output) = delimited(tag("##."), data_label_name, tag("="))(input)?;
-    Ok((remaining, TypedDataLabel(output)))
+fn data_label(input: &str) -> IResult<&str, DataLabel> {
+    let (remaining, output) =
+        delimited(pair(tag("##"), opt(tag("."))), data_label_name, tag("="))(input)?;
+    Ok((remaining, DataLabel(output)))
 }
 
 fn inline_comment(input: &str) -> IResult<&str, ()> {
@@ -65,19 +66,13 @@ fn inline_comment(input: &str) -> IResult<&str, ()> {
 fn multi_line_comment(input: &str) -> IResult<&str, ()> {
     value(
         (),
-        many_till(
-            value((), anychar),
-            peek(alt((
-                value((), untyped_data_label),
-                value((), typed_data_label),
-            ))),
-        ),
+        many_till(value((), anychar), peek(value((), data_label))),
     )(input)
 }
 
-fn text_data_set(input: &str) -> IResult<&str, TextDataSet> {
+fn text_data_set(input: &str) -> IResult<&str, Text> {
     let (remaining, (output, _)) = many_till(anychar, peek(line_ending))(input)?;
-    Ok((remaining, TextDataSet(String::from_iter(output))))
+    Ok((remaining, Text(String::from_iter(output))))
 }
 
 fn string_data_set(input: &str) -> IResult<&str, StringDataSet> {
@@ -89,9 +84,9 @@ fn affn_float_data_set(input: &str) -> IResult<&str, AffnFloatDataSet> {
     todo!()
 }
 
-fn affn_int_data_set(input: &str) -> IResult<&str, AffnIntDataSet> {
-    pair(one_of("+-."), digit1)
-}
+// fn affn_int_data_set(input: &str) -> IResult<&str, AffnIntDataSet> {
+//     pair(one_of("+-."), digit1)
+// }
 
 fn asdf_data_set(input: &str) -> IResult<&str, AsdfDataSet> {
     todo!()
@@ -102,7 +97,7 @@ impl Parser {
         Self {}
     }
 
-    fn parse(input: &str) -> JcampDx {
+    fn parse(input: &str) -> HashMap<String, Value> {
         todo!()
     }
 }
@@ -118,26 +113,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_untyped_data_label() {
-        let (remaining, output) =
-            untyped_data_label("##O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
+    fn test_data_label() {
+        let (remaining, output) = data_label("##O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
-        assert_eq!(output, UntypedDataLabel("OBSERVATION232TYPE".into()));
-    }
+        assert_eq!(output, DataLabel("OBSERVATION232TYPE".into()));
 
-    #[test]
-    fn test_typed_data_label() {
-        let (remaining, output) =
-            typed_data_label("##.O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
+        let (remaining, output) = data_label("##.O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
-        assert_eq!(output, TypedDataLabel("OBSERVATION232TYPE".into()));
+        assert_eq!(output, DataLabel("OBSERVATION232TYPE".into()));
     }
 
     #[test]
     fn test_text_data_set() {
         let (remaining, output) = text_data_set("asd\n").unwrap();
         assert_eq!(remaining, "\n");
-        assert_eq!(output, TextDataSet("asd".into()));
+        assert_eq!(output, Text("asd".into()));
     }
 
     #[test]
