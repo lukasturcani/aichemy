@@ -63,7 +63,11 @@ fn labeled_data_record(input: &str) -> IResult<&str, (String, Value)> {
     let (remaining, (label, value)) = separated_pair(
         data_label,
         space0,
-        alt((affn_number_data_set, text_data_set)),
+        alt((
+            affn_number_data_set,
+            multi_line_text_data_set,
+            text_data_set,
+        )),
     )(input)?;
     Ok((remaining, (label, value)))
 }
@@ -85,6 +89,11 @@ fn text_data_set(input: &str) -> IResult<&str, Value> {
         remaining,
         Value::Text(String::from_iter(output).trim().into()),
     ))
+}
+
+fn multi_line_text_data_set(input: &str) -> IResult<&str, Value> {
+    let (remaining, output) = delimited(tag("<"), many0(anychar), tag(">"))(input)?;
+    Ok((remaining, Value::Text(String::from_iter(output))))
 }
 
 fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
@@ -183,6 +192,18 @@ mod tests {
         assert_eq!(remaining, "  \n");
         assert_eq!(label, "$OBSERVATION232TYPE");
         assert_eq!(value, Value::Number(-32.));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= <hello world>  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Text("hello world".into()));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= <hello\nworld>  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Text("hello\nworld".into()));
     }
 
     #[test]
