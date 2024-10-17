@@ -4,7 +4,7 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{
-        alphanumeric1, anychar, line_ending, not_line_ending, one_of, space0, u64,
+        alphanumeric1, anychar, char, line_ending, not_line_ending, one_of, space0, u64,
     },
     combinator::{consumed, opt, peek, value},
     multi::{many0, many1, many_till, separated_list0},
@@ -54,6 +54,7 @@ fn labeled_data_record(input: &str) -> IResult<&str, (String, Value)> {
         data_label,
         space0,
         alt((
+            array_data_set,
             affn_number_data_set,
             multi_line_text_data_set,
             text_data_set,
@@ -79,7 +80,7 @@ fn text_data_set(input: &str) -> IResult<&str, Value> {
 }
 
 fn multi_line_text_data_set(input: &str) -> IResult<&str, Value> {
-    let (remaining, (output, _)) = preceded(tag("<"), many_till(anychar, tag(">")))(input)?;
+    let (remaining, (output, _)) = preceded(char('<'), many_till(anychar, char('>')))(input)?;
     Ok((remaining, Value::Text(String::from_iter(output))))
 }
 
@@ -88,10 +89,17 @@ fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
     Ok((remaning, Value::Number(output)))
 }
 
-fn array(input: &str) -> IResult<&str, Value> {
+fn array_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, output) = preceded(
-        preceded(delimited(u64, tag(".."), u64), pair(space0, line_ending)),
-        separated_list0(space0, double),
+        preceded(
+            delimited(
+                preceded(char('('), u64),
+                tag(".."),
+                preceded(u64, char(')')),
+            ),
+            pair(space0, line_ending),
+        ),
+        preceded(space0, separated_list0(space0, double)),
     )(input)?;
     Ok((remaining, Value::Array(output)))
 }
@@ -206,13 +214,19 @@ mod tests {
         assert_eq!(remaining, "  \n");
         assert_eq!(label, "$OBSERVATION232TYPE");
         assert_eq!(value, Value::Text("hello\n  world".into()));
+
+        let (remaining, (label, value)) =
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= (0..3)  \n  1 2 3 4  ").unwrap();
+        assert_eq!(remaining, "  ");
+        assert_eq!(label, "$OBSERVATION232TYPE");
+        assert_eq!(value, Value::Array(vec![1., 2., 3., 4.]));
     }
 
     #[test]
     fn test_array() {
-        let (remaining, output) = array("0..3\n1 2 3    \n").unwrap();
-        assert_eq!(remaining, "    \n");
-        assert_eq!(output, Value::Array(vec![1., 2., 3.]));
+        let (remaining, output) = array_data_set("(0..3)  \n 1 2 3 4   \n").unwrap();
+        assert_eq!(remaining, "   \n");
+        assert_eq!(output, Value::Array(vec![1., 2., 3., 4.]));
     }
 
     #[test]
