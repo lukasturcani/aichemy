@@ -84,11 +84,8 @@ fn multi_line_comment(input: &str) -> IResult<&str, ()> {
 }
 
 fn text_data_set(input: &str) -> IResult<&str, Value> {
-    let (remaining, (output, _)) = many_till(anychar, peek(line_ending))(input)?;
-    Ok((
-        remaining,
-        Value::Text(String::from_iter(output).trim().into()),
-    ))
+    let (remaining, (output, _)) = many_till(anychar, peek(pair(space0, line_ending)))(input)?;
+    Ok((remaining, Value::Text(String::from_iter(output))))
 }
 
 fn multi_line_text_data_set(input: &str) -> IResult<&str, Value> {
@@ -100,6 +97,19 @@ fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
     let (remaning, output) = double(input)?;
     Ok((remaning, Value::Number(output)))
 }
+
+// fn asdf_data_set_value(input: &str) -> IResult<&str, Value> {
+//     todo!()
+// }
+
+// fn asdf_data_set(input: &str) -> IResult<&str, Value> {
+//     let (remaining, output) = separated_pair(
+//         tag("X++(Y..Y)"),
+//         pair(space0, line_ending),
+//         asdf_data_set_value,
+//     )?;
+//     todo!()
+// }
 
 impl Parser {
     fn new() -> Self {
@@ -166,7 +176,7 @@ mod tests {
 
         let (remaining, (label, value)) =
             labeled_data_record("##$OBSERVATION232TYPE=     SOLID_ANODE     \n").unwrap();
-        assert_eq!(remaining, "\n");
+        assert_eq!(remaining, "     \n");
         assert_eq!(label, "$OBSERVATION232TYPE");
         assert_eq!(value, Value::Text("SOLID_ANODE".into()));
 
