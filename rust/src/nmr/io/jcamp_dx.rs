@@ -42,9 +42,10 @@ enum Value {
 }
 
 fn data_label_name(input: &str) -> IResult<&str, String> {
-    let (remaining, dollar) = opt(tag("$"))(input)?;
-    let (remaining, (_, label_name)) =
-        consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_")))))(remaining)?;
+    let (remaining, (dollar, (_, label_name))) = pair(
+        opt(tag("$")),
+        consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_"))))),
+    )(input)?;
     Ok((
         remaining,
         format!(
