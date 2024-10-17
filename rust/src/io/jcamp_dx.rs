@@ -18,11 +18,6 @@ use nom::{
 #[derive(Clone, Debug)]
 pub struct Parser {}
 
-pub struct JcampDx;
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-struct DataLabel(String);
-
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct Text(String);
 
@@ -53,10 +48,8 @@ fn data_label_name(input: &str) -> IResult<&str, String> {
     Ok((remaining, output.join("").to_uppercase()))
 }
 
-fn data_label(input: &str) -> IResult<&str, DataLabel> {
-    let (remaining, output) =
-        delimited(pair(tag("##"), opt(tag("."))), data_label_name, tag("="))(input)?;
-    Ok((remaining, DataLabel(output)))
+fn data_label(input: &str) -> IResult<&str, String> {
+    delimited(pair(tag("##"), opt(tag("."))), data_label_name, tag("="))(input)
 }
 
 fn inline_comment(input: &str) -> IResult<&str, ()> {
@@ -116,11 +109,11 @@ mod tests {
     fn test_data_label() {
         let (remaining, output) = data_label("##O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
-        assert_eq!(output, DataLabel("OBSERVATION232TYPE".into()));
+        assert_eq!(output, "OBSERVATION232TYPE".to_string());
 
         let (remaining, output) = data_label("##.O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
-        assert_eq!(output, DataLabel("OBSERVATION232TYPE".into()));
+        assert_eq!(output, "OBSERVATION232TYPE".to_string());
     }
 
     #[test]
