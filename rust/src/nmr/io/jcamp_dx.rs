@@ -45,9 +45,11 @@ enum Value {
 }
 
 fn data_label_name(input: &str) -> IResult<&str, String> {
+    let (remaining, dollar) = opt(tag("$"))(input)?;
     let (remaining, (_, output)) =
-        consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_")))))(input)?;
-    Ok((remaining, output.join("").to_uppercase()))
+        consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_")))))(remaining)?;
+    let label_name = output.join("").to_uppercase();
+    Ok((remaining, format!("{}{}", dollar.unwrap_or(""), label_name)))
 }
 
 fn data_label(input: &str) -> IResult<&str, String> {
@@ -80,10 +82,6 @@ fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
     Ok((remaning, Value::Number(output)))
 }
 
-fn asdf_data_set(input: &str) -> IResult<&str, AsdfDataSet> {
-    todo!()
-}
-
 impl Parser {
     fn new() -> Self {
         Self {}
@@ -113,6 +111,10 @@ mod tests {
         let (remaining, output) = data_label("##.O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
         assert_eq!(remaining, "SOLID_ANODE");
         assert_eq!(output, "OBSERVATION232TYPE".to_string());
+
+        let (remaining, output) = data_label("##$O-B  SER\\va/TiON232_TYPE=SOLID_ANODE").unwrap();
+        assert_eq!(remaining, "SOLID_ANODE");
+        assert_eq!(output, "$OBSERVATION232TYPE".to_string());
     }
 
     #[test]
