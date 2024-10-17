@@ -151,6 +151,10 @@ mod tests {
         let (remaining, output) = multi_line_text_data_set("<asd\n  asd>  \n").unwrap();
         assert_eq!(remaining, "  \n");
         assert_eq!(output, Value::Text("asd\n  asd".into()));
+
+        let (remaining, output) = multi_line_text_data_set("<>  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(output, Value::Text("".into()));
     }
 
     #[test]
