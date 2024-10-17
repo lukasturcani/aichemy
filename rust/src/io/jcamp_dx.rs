@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use nom::{
+    branch::alt,
     bytes::complete::tag,
-    character::complete::{alphanumeric1, anychar, line_ending, not_line_ending, one_of},
+    character::complete::{alphanumeric1, anychar, i64, line_ending, not_line_ending, one_of, u32},
     combinator::{consumed, opt, peek, value},
     multi::{many0, many1, many_till},
     number::complete::double,
-    sequence::{delimited, pair, terminated},
+    sequence::{delimited, pair, separated_pair, terminated},
     IResult,
 };
 
@@ -80,9 +81,10 @@ fn affn_float_data_set(input: &str) -> IResult<&str, Value> {
     Ok((remaning, Value::Float(output)))
 }
 
-// fn affn_int_data_set(input: &str) -> IResult<&str, AffnIntDataSet> {
-//     pair(one_of("+-."), digit1)
-// }
+fn affn_int_data_set(input: &str) -> IResult<&str, Value> {
+    let (remaning, output) = i64(input)?;
+    Ok((remaning, Value::Int(output)))
+}
 
 fn asdf_data_set(input: &str) -> IResult<&str, AsdfDataSet> {
     todo!()
@@ -158,6 +160,29 @@ mod tests {
         let (remaining, output) = affn_float_data_set("0.23E-13\n").unwrap();
         assert_eq!(remaining, "\n");
         assert_eq!(output, Value::Float(0.23e-13));
+
+        let (remaining, output) = affn_float_data_set("2E13\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(2e13));
+
+        let (remaining, output) = affn_float_data_set("2E+13\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(2e13));
+
+        let (remaining, output) = affn_float_data_set("200000000000000E-13\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Float(200000000000000E-13));
+    }
+
+    #[test]
+    fn test_affn_int_data_set() {
+        let (remaining, output) = affn_int_data_set("132\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Int(132));
+
+        let (remaining, output) = affn_int_data_set("-1\n").unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(output, Value::Int(-1));
     }
 
     #[test]
