@@ -90,7 +90,7 @@ fn affn_float_data_set(input: &str) -> IResult<&str, AffnFloatDataSet> {
 }
 
 fn affn_int_data_set(input: &str) -> IResult<&str, AffnIntDataSet> {
-    todo!()
+    pair(one_of("+-."), digit1)
 }
 
 fn asdf_data_set(input: &str) -> IResult<&str, AsdfDataSet> {
