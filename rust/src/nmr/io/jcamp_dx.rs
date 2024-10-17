@@ -31,13 +31,14 @@ fn data_label_name(input: &str) -> IResult<&str, String> {
         opt(tag("$")),
         consumed(many1(terminated(alphanumeric1, many0(one_of(" -/\\_"))))),
     )(input)?;
+    let label_name = label_name.join("").to_uppercase();
     Ok((
         remaining,
-        format!(
-            "{}{}",
-            dollar.unwrap_or(""),
-            label_name.join("").to_uppercase()
-        ),
+        if dollar.is_some() {
+            format!("${label_name}")
+        } else {
+            label_name
+        },
     ))
 }
 
