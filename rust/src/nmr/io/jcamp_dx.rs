@@ -7,7 +7,7 @@ use nom::{
     combinator::{consumed, opt, peek, value},
     multi::{many0, many1, many_till},
     number::complete::double,
-    sequence::{delimited, pair, separated_pair, terminated},
+    sequence::{delimited, pair, preceded, separated_pair, terminated},
     IResult,
 };
 
@@ -92,7 +92,7 @@ fn text_data_set(input: &str) -> IResult<&str, Value> {
 }
 
 fn multi_line_text_data_set(input: &str) -> IResult<&str, Value> {
-    let (remaining, output) = delimited(tag("<"), many0(anychar), tag(">"))(input)?;
+    let (remaining, (output, _)) = preceded(tag("<"), many_till(anychar, tag(">")))(input)?;
     Ok((remaining, Value::Text(String::from_iter(output))))
 }
 
@@ -141,6 +141,13 @@ mod tests {
         let (remaining, output) = text_data_set("asd\n").unwrap();
         assert_eq!(remaining, "\n");
         assert_eq!(output, Value::Text("asd".into()));
+    }
+
+    #[test]
+    fn test_multi_line_text_data_set() {
+        let (remaining, output) = multi_line_text_data_set("<asd\n  asd>  \n").unwrap();
+        assert_eq!(remaining, "  \n");
+        assert_eq!(output, Value::Text("asd\n  asd".into()));
     }
 
     #[test]
@@ -200,10 +207,10 @@ mod tests {
         assert_eq!(value, Value::Text("hello world".into()));
 
         let (remaining, (label, value)) =
-            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= <hello\nworld>  \n").unwrap();
+            labeled_data_record("##$O-B  SER\\va/TiON232_TYPE= <hello\n  world>  \n").unwrap();
         assert_eq!(remaining, "  \n");
         assert_eq!(label, "$OBSERVATION232TYPE");
-        assert_eq!(value, Value::Text("hello\nworld".into()));
+        assert_eq!(value, Value::Text("hello\n  world".into()));
     }
 
     #[test]
