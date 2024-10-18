@@ -121,11 +121,14 @@ fn parser(input: &str) -> IResult<&str, Vec<(String, Value)>, nom::error::Error<
     delimited(
         multispace0,
         separated_list0(
-            delimited(
-                multispace0,
-                opt(alt((inline_comment, multi_line_comment))),
-                multispace0,
-            ),
+            alt((
+                value((), multispace0),
+                value(
+                    (),
+                    many0(delimited(multispace0, inline_comment, multispace0)),
+                ),
+                value((), delimited(multispace0, multi_line_comment, multispace0)),
+            )),
             labeled_data_record,
         ),
         multispace0,
