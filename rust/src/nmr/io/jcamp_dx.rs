@@ -104,11 +104,7 @@ fn asdf_data_set(input: &str) -> IResult<&str, Value> {
 fn array_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, output) = preceded(
         preceded(
-            delimited(
-                preceded(char('('), u64),
-                tag(".."),
-                preceded(u64, char(')')),
-            ),
+            delimited(char('('), delimited(u64, tag(".."), u64), char(')')),
             pair(space0, line_ending),
         ),
         preceded(space0, separated_list0(space0, double)),
@@ -120,12 +116,12 @@ fn parser(input: &str) -> IResult<&str, Vec<(String, Value)>, nom::error::Error<
     delimited(
         multispace0,
         separated_list0(
-            multispace0,
             delimited(
+                multispace0,
                 opt(alt((inline_comment, multi_line_comment))),
-                labeled_data_record,
-                opt(alt((inline_comment, multi_line_comment))),
+                multispace0,
             ),
+            labeled_data_record,
         ),
         multispace0,
     )(input)
