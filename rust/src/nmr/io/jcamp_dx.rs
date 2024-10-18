@@ -123,7 +123,7 @@ fn parser(input: &str) -> IResult<&str, Vec<(String, Value)>, nom::error::Error<
         separated_list0(
             delimited(
                 multispace0,
-                opt(alt((inline_comment, multi_line_comment))),
+                many0(alt((inline_comment, multi_line_comment))),
                 multispace0,
             ),
             labeled_data_record,
@@ -393,6 +393,8 @@ mod tests {
                 10 11 12 13
                 14 15 16 17
                 ##.OBSERVE NUCLEUS= ^1H
+                $$ something
+                $$ ---------
                 ##XYPOINTS= (X++(Y..Y))
                     -0.001 -0.001 0.001
                     0.002 0.003 0.001
