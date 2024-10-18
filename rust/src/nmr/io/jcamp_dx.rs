@@ -316,5 +316,19 @@ mod tests {
         )
         .unwrap();
         assert_eq!(remaining, "");
+        assert_eq!(
+            output,
+            vec![
+                ("TITLE".into(), Value::Text("diff".into())),
+                ("JCAMPDX".into(), Value::Number(5.)),
+                ("DATATYPE".into(), Value::Text("MASS SPECTRUM".into())),
+                (".OBSERVENUCLEUS".into(), Value::Text("^1H".into())),
+                (
+                    "XYPOINTS".into(),
+                    Value::Array(vec![-0.001, -0.001, 0.001, 0.001, 0.001,])
+                ),
+                ("END".into(), Value::Text("".into())),
+            ]
+        );
     }
 }
