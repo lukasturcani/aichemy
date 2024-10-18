@@ -6,9 +6,6 @@ pub mod jcamp_dx;
 #[derive(Debug, Error)]
 pub enum Error {
     /// Failed to parse a file.
-    #[error("Failed to parse file: {source}")]
-    Parse {
-        /// The underlying error.
-        source: nom::Err<nom::error::Error<String>>,
-    },
+    #[error("Failed to parse file: {0}")]
+    Parse(String),
 }
