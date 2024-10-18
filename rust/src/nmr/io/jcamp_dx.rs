@@ -91,7 +91,7 @@ fn asdf_data_set_line(input: &str) -> IResult<&str, Vec<f64>> {
 }
 
 fn asdf_data_set_value_block(input: &str) -> IResult<&str, Value> {
-    let (remaining, output) = separated_list0(multispace1, asdf_data_set_line)(input)?;
+    let (remaining, output) = separated_list1(multispace1, asdf_data_set_line)(input)?;
     Ok((
         remaining,
         Value::Array(output.into_iter().flatten().collect()),
@@ -101,21 +101,18 @@ fn asdf_data_set_value_block(input: &str) -> IResult<&str, Value> {
 fn asdf_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, output) = preceded(
         preceded(tag("(X++(Y..Y))"), multispace1),
-        separated_list1(multispace1, asdf_data_set_line),
+        asdf_data_set_value_block,
     )(input)?;
-    Ok((
-        remaining,
-        Value::Array(output.into_iter().flatten().collect()),
-    ))
+    Ok((remaining, output))
 }
 
 fn array_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, output) = preceded(
         preceded(
             delimited(char('('), delimited(u64, tag(".."), u64), char(')')),
-            pair(space0, line_ending),
+            multispace0,
         ),
-        preceded(space0, separated_list0(space0, double)),
+        separated_list0(multispace0, double),
     )(input)?;
     Ok((remaining, Value::Array(output)))
 }
@@ -355,6 +352,16 @@ mod tests {
         let (remaining, output) = array_data_set("(0..3)  \n 1 2 3 4   \n").unwrap();
         assert_eq!(remaining, "   \n");
         assert_eq!(output, Value::Array(vec![1., 2., 3., 4.]));
+
+        let (remaining, output) = array_data_set(
+            "(0..7)
+                1 2 3 4
+                1 2 3 4
+            ",
+        )
+        .unwrap();
+        assert_eq!(remaining, "\n            ");
+        assert_eq!(output, Value::Array(vec![1., 2., 3., 4., 1., 2., 3., 4.]));
     }
 
     #[test]
@@ -402,7 +409,7 @@ mod tests {
                 ("JCAMPDX".into(), Value::Number(5.)),
                 ("DATATYPE".into(), Value::Text("MASS SPECTRUM".into())),
                 (
-                    "D".into(),
+                    "$D".into(),
                     Value::Array(vec![10., 11., 12., 13., 14., 15., 16., 17.])
                 ),
                 (".OBSERVENUCLEUS".into(), Value::Text("^1H".into())),
