@@ -385,7 +385,7 @@ mod tests {
                 ##.OBSERVE NUCLEUS= ^1H
                 ##XYPOINTS= (X++(Y..Y))
                     -0.001 -0.001 0.001
-                    0.001 0.001 0.001
+                    0.002 0.003 0.001
                     0.001 0.001 0.001
                 ##END=
             ",
@@ -401,7 +401,7 @@ mod tests {
                 (".OBSERVENUCLEUS".into(), Value::Text("^1H".into())),
                 (
                     "XYPOINTS".into(),
-                    Value::Array(vec![-0.001, 0.001, 0.001, 0.001, 0.001, 0.001])
+                    Value::Array(vec![-0.001, 0.001, 0.003, 0.001, 0.001, 0.001])
                 ),
                 ("END".into(), Value::Text("".into())),
             ]
