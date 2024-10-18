@@ -4,8 +4,8 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{
-        alphanumeric1, anychar, char, line_ending, multispace1, not_line_ending, one_of, space0,
-        u64,
+        alphanumeric1, anychar, char, line_ending, multispace0, multispace1, not_line_ending,
+        one_of, space0, u64,
     },
     combinator::{consumed, opt, peek, value},
     multi::{many0, many1, many_till, separated_list0},
@@ -14,14 +14,7 @@ use nom::{
     IResult,
 };
 
-/// A parser for JCAMP-DX files.
-///
-/// This parser is based on the JCAMP-DX specification, defined
-/// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf) and
-/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
-/// TODO: stuff
-#[derive(Clone, Debug)]
-pub struct Parser {}
+use super::Error;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Value {
@@ -55,6 +48,7 @@ fn labeled_data_record(input: &str) -> IResult<&str, (String, Value)> {
         data_label,
         space0,
         alt((
+            asdf_data_set,
             array_data_set,
             affn_number_data_set,
             multi_line_text_data_set,
@@ -122,19 +116,40 @@ fn array_data_set(input: &str) -> IResult<&str, Value> {
     Ok((remaining, Value::Array(output)))
 }
 
-impl Parser {
-    fn new() -> Self {
-        Self {}
-    }
-
-    fn parse(input: &str) -> HashMap<String, Value> {
-        todo!()
-    }
+fn parser(input: &str) -> IResult<&str, Vec<(String, Value)>, nom::error::Error<String>> {
+    delimited(
+        multispace0,
+        separated_list0(
+            multispace0,
+            delimited(
+                opt(alt((inline_comment, multi_line_comment))),
+                labeled_data_record,
+                opt(alt((inline_comment, multi_line_comment))),
+            ),
+        ),
+        multispace0,
+    )(input)
+    .map_err(|source| source.to_owned())
 }
 
-impl Default for Parser {
-    fn default() -> Self {
-        Self::new()
+/// A parser for JCAMP-DX files.
+///
+/// This parser is based on the JCAMP-DX specification, defined
+/// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
+/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_NMR_1993.pdf) and
+/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
+/// TODO: stuff
+#[derive(Clone, Debug, Default)]
+pub struct Parser;
+
+impl Parser {
+    pub fn new() -> Self {
+        Parser
+    }
+
+    pub fn parse(self, input: &str) -> Result<HashMap<String, Value>, Error> {
+        let (_, output) = parser(input).map_err(|source| Error::Parse { source })?;
+        Ok(output.into_iter().collect())
     }
 }
 
@@ -286,5 +301,24 @@ mod tests {
         )
         .unwrap();
         assert_eq!(remaining, "##TITLE= ")
+    }
+
+    #[test]
+    fn test_parser() {
+        let (remaining, output) = parser(
+            "
+                ##TITLE= diff
+                ##JCAMP-DX= 5.00   $$ ISDF V5.00
+                ##DATA TYPE= MASS SPECTRUM
+                ##.OBSERVE NUCLEUS= ^1H
+                ##XYPOINTS= (X++(Y..Y))
+                    -0.001 -0.001 0.001
+                    0.001 0.001 0.001
+                    0.001 0.001 0.001
+                ##END=
+            ",
+        )
+        .unwrap();
+        assert_eq!(remaining, "");
     }
 }
