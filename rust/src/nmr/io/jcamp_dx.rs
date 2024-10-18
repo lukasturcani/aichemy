@@ -8,7 +8,7 @@ use nom::{
         one_of, space0, u64,
     },
     combinator::{consumed, opt, peek, value},
-    multi::{many0, many1, many_till, separated_list0},
+    multi::{many0, many1, many_till, separated_list0, separated_list1},
     number::complete::double,
     sequence::{delimited, pair, preceded, separated_pair, terminated},
     IResult,
@@ -86,14 +86,22 @@ fn affn_number_data_set(input: &str) -> IResult<&str, Value> {
 
 fn asdf_data_set_line(input: &str) -> IResult<&str, Vec<f64>> {
     let (remaining, (_, ys)) =
-        separated_pair(double, space0, separated_list0(space0, double))(input)?;
+        separated_pair(double, space0, many1(delimited(space0, double, space0)))(input)?;
     Ok((remaining, ys))
+}
+
+fn asdf_data_set_value_block(input: &str) -> IResult<&str, Value> {
+    let (remaining, output) = separated_list0(multispace1, asdf_data_set_line)(input)?;
+    Ok((
+        remaining,
+        Value::Array(output.into_iter().flatten().collect()),
+    ))
 }
 
 fn asdf_data_set(input: &str) -> IResult<&str, Value> {
     let (remaining, output) = preceded(
-        preceded(tag("(X++(Y..Y))"), pair(space0, line_ending)),
-        separated_list0(multispace1, asdf_data_set_line),
+        preceded(tag("(X++(Y..Y))"), multispace1),
+        separated_list1(multispace1, asdf_data_set_line),
     )(input)?;
     Ok((
         remaining,
@@ -253,6 +261,58 @@ mod tests {
         assert_eq!(remaining, "  ");
         assert_eq!(label, "$OBSERVATION232TYPE");
         assert_eq!(value, Value::Array(vec![1., 2., 3., 4.]));
+
+        let (remaining, (label, value)) = labeled_data_record(
+            "##XYPOINTS= (X++(Y..Y))
+                -0.001 -0.001 0.001
+                0.001 0.001 0.001
+                0.002 0.002 0.002
+                0.001 0.001 0.001 ",
+        )
+        .unwrap();
+        assert_eq!(remaining, "");
+        assert_eq!(label, "XYPOINTS");
+        assert_eq!(
+            value,
+            Value::Array(vec![
+                -0.001, 0.001, 0.001, 0.001, 0.002, 0.002, 0.001, 0.001
+            ])
+        );
+    }
+
+    #[test]
+    fn test_asdf_data_set_line() {
+        let (remaining, output) = asdf_data_set_line(
+            "16383 +2259260   -5242968  -7176216
+            16374 +1757248   +3559312   1108422
+            16365 -5429568   -7119772   -2065758 \n",
+        )
+        .unwrap();
+        assert_eq!(
+            remaining,
+            "
+            16374 +1757248   +3559312   1108422
+            16365 -5429568   -7119772   -2065758 \n",
+        );
+        assert_eq!(output, vec![2259260., -5242968., -7176216.]);
+    }
+
+    #[test]
+    fn test_asdf_data_set_value_block() {
+        let (remaining, output) = asdf_data_set_value_block(
+            "16383 +2259260   -5242968  -7176216
+            16374 +1757248   +3559312   1108422
+            16365 -5429568   -7119772   -2065758 \n",
+        )
+        .unwrap();
+        assert_eq!(remaining, "\n");
+        assert_eq!(
+            output,
+            Value::Array(vec![
+                2259260., -5242968., -7176216., 1757248., 3559312., 1108422., -5429568., -7119772.,
+                -2065758.
+            ])
+        );
     }
 
     #[test]
@@ -260,11 +320,27 @@ mod tests {
         let (remaining, output) = asdf_data_set(
             "(X++(Y..Y))\n\
             16383 +2259260   -5242968  -7176216 \n\
-            16374 +1757248   +3559312   +1108422 \n\
+            16374 +1757248   +3559312   1108422 \n\
             16365 -5429568   -7119772   -2065758 \n",
         )
         .unwrap();
-        assert_eq!(remaining, " \n");
+        assert_eq!(remaining, "\n");
+        assert_eq!(
+            output,
+            Value::Array(vec![
+                2259260., -5242968., -7176216., 1757248., 3559312., 1108422., -5429568., -7119772.,
+                -2065758.
+            ])
+        );
+
+        let (remaining, output) = asdf_data_set(
+            "(X++(Y..Y))
+            16383 +2259260   -5242968  -7176216
+            16374 +1757248   +3559312   1108422 \n\
+            16365 -5429568   -7119772   -2065758 \n",
+        )
+        .unwrap();
+        assert_eq!(remaining, "\n");
         assert_eq!(
             output,
             Value::Array(vec![
@@ -325,7 +401,7 @@ mod tests {
                 (".OBSERVENUCLEUS".into(), Value::Text("^1H".into())),
                 (
                     "XYPOINTS".into(),
-                    Value::Array(vec![-0.001, -0.001, 0.001, 0.001, 0.001,])
+                    Value::Array(vec![-0.001, 0.001, 0.001, 0.001, 0.001, 0.001])
                 ),
                 ("END".into(), Value::Text("".into())),
             ]
