@@ -123,7 +123,7 @@ fn parser(input: &str) -> IResult<&str, Vec<(String, Value)>, nom::error::Error<
         separated_list0(
             delimited(
                 multispace0,
-                many0(alt((inline_comment, multi_line_comment))),
+                opt(alt((inline_comment, multi_line_comment))),
                 multispace0,
             ),
             labeled_data_record,
@@ -264,10 +264,10 @@ mod tests {
                 -0.001 -0.001 0.001
                 0.001 0.001 0.001
                 0.002 0.002 0.002
-                0.001 0.001 0.001 ",
+                0.001 0.001 0.001 \n",
         )
         .unwrap();
-        assert_eq!(remaining, "");
+        assert_eq!(remaining, "\n");
         assert_eq!(label, "XYPOINTS");
         assert_eq!(
             value,
