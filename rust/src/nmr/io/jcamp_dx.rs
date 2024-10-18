@@ -382,6 +382,9 @@ mod tests {
                 ##TITLE= diff
                 ##JCAMP-DX= 5.00   $$ ISDF V5.00
                 ##DATA TYPE= MASS SPECTRUM
+                ##$D= (0..5)
+                10 11 12 13
+                14 15 16 17
                 ##.OBSERVE NUCLEUS= ^1H
                 ##XYPOINTS= (X++(Y..Y))
                     -0.001 -0.001 0.001
@@ -398,6 +401,10 @@ mod tests {
                 ("TITLE".into(), Value::Text("diff".into())),
                 ("JCAMPDX".into(), Value::Number(5.)),
                 ("DATATYPE".into(), Value::Text("MASS SPECTRUM".into())),
+                (
+                    "D".into(),
+                    Value::Array(vec![10., 11., 12., 13., 14., 15., 16., 17.])
+                ),
                 (".OBSERVENUCLEUS".into(), Value::Text("^1H".into())),
                 (
                     "XYPOINTS".into(),
