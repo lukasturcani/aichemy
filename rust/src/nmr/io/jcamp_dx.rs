@@ -361,7 +361,7 @@ mod tests {
         let tokens = scan_tokens(
             b"
                 ##label 1 =   .32  \n\
-                ##label 2 = -43.32 $$ ignore me
+                ##label 2 = -42.32 $$ ignore me
                 ##label 3 = 42
                 ##label 4 = 42e12
             ",
