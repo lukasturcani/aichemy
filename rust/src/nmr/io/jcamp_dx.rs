@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str;
 
 use super::Error;
 
@@ -24,6 +25,7 @@ struct Token {
 #[derive(Debug, Clone)]
 enum ScanError {
     UnexpectedCharacter { line: usize, character: char },
+    InvalidString { line: usize },
 }
 
 struct Scanner {
@@ -50,13 +52,7 @@ impl Scanner {
             match char {
                 b'$' => {
                     if self.r#match(source, b'$') {
-                        while let Some(&char) = source.get(self.current + 1) {
-                            if char == b'\n' {
-                                break;
-                            }
-                            self.current += 1;
-                        }
-                        self.advance();
+                        self.handle_inline_comment(source);
                     } else {
                         self.errors.push(ScanError::UnexpectedCharacter {
                             line: self.line,
@@ -103,8 +99,49 @@ impl Scanner {
     }
 
     fn handle_data_set(&mut self, source: &[u8]) {
-        return;
-        while let Some(&char) = source.get(self.current) {}
+        while let Some(&char) = source.get(self.current) {
+            match char {
+                b'$' => {
+                    if source.get(self.current + 1) == Some(&b'$') {
+                        self.current -= 1;
+                        break;
+                    } else {
+                        self.current += 1;
+                    }
+                }
+                b'\n' => {
+                    self.line += 1;
+                    self.current += 1;
+                }
+                b'#' => {
+                    if source.get(self.current + 1) == Some(&b'#') {
+                        self.current -= 1;
+                        break;
+                    }
+                }
+                _ => {
+                    self.current += 1;
+                }
+            }
+        }
+        match str::from_utf8(source[self.start..self.current].trim_ascii()) {
+            Ok(string) => self.add_token(TokenType::String(string.into())),
+            Err(_) => {
+                self.errors
+                    .push(ScanError::InvalidString { line: self.line });
+                self.advance();
+            }
+        }
+    }
+
+    fn handle_inline_comment(&mut self, source: &[u8]) {
+        while let Some(&char) = source.get(self.current + 1) {
+            if char == b'\n' {
+                break;
+            }
+            self.current += 1;
+        }
+        self.advance();
     }
 
     fn handle_multiline_comment(&mut self, source: &[u8]) {
@@ -198,10 +235,16 @@ mod tests {
         let tokens = scan_tokens(b"##.mY/d atalabEl =").unwrap();
         assert_eq!(
             tokens,
-            vec![Token {
-                line: 1,
-                r#type: TokenType::DataLabel("MYDATALABEL".into())
-            }]
+            vec![
+                Token {
+                    line: 1,
+                    r#type: TokenType::DataLabel("MYDATALABEL".into())
+                },
+                Token {
+                    line: 1,
+                    r#type: TokenType::String("".into())
+                }
+            ]
         );
     }
 
@@ -209,10 +252,10 @@ mod tests {
     fn scan_multiline_comment() {
         let tokens = scan_tokens(
             b"
-                ##label 1=
+                ##label 1= foo
                 ##= this is a comment anything
                 can be put here
-                ##END=
+                ##END= bar
             ",
         )
         .unwrap();
@@ -224,9 +267,17 @@ mod tests {
                     r#type: TokenType::DataLabel("LABEL1".into())
                 },
                 Token {
+                    line: 3,
+                    r#type: TokenType::String("foo".into()),
+                },
+                Token {
                     line: 5,
                     r#type: TokenType::DataLabel("END".into())
-                }
+                },
+                Token {
+                    line: 6,
+                    r#type: TokenType::String("bar".into()),
+                },
             ]
         );
     }
@@ -239,10 +290,16 @@ mod tests {
         let tokens = scan_tokens(b" ##foo=  $$ this is a comment ").unwrap();
         assert_eq!(
             tokens,
-            vec![Token {
-                line: 1,
-                r#type: TokenType::DataLabel("FOO".into())
-            }]
+            vec![
+                Token {
+                    line: 1,
+                    r#type: TokenType::DataLabel("FOO".into())
+                },
+                Token {
+                    line: 1,
+                    r#type: TokenType::String("".into()),
+                },
+            ]
         );
     }
 
@@ -251,7 +308,8 @@ mod tests {
         let tokens = scan_tokens(
             b"
                 ##label 1 =  this is a string  \n\
-                ##label 2 = also this
+                ##label 2 = also this $$ ignore me
+                ##label 3 = and this
             ",
         )
         .unwrap();
@@ -263,7 +321,7 @@ mod tests {
                     r#type: TokenType::DataLabel("LABEL1".into())
                 },
                 Token {
-                    line: 2,
+                    line: 3,
                     r#type: TokenType::String("this is a string".into())
                 },
                 Token {
@@ -274,6 +332,14 @@ mod tests {
                     line: 3,
                     r#type: TokenType::String("also this".into())
                 },
+                Token {
+                    line: 4,
+                    r#type: TokenType::DataLabel("LABEL3".into())
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::String("and this".into())
+                }
             ]
         );
     }
