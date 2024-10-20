@@ -92,8 +92,7 @@ impl Scanner {
                     self.current += 1;
                 }
                 b'#' => {
-                    if self.r#match(source, b'#') {
-                        self.current -= 2;
+                    if source.get(self.current + 1) == Some(&b'#') {
                         self.start = self.current;
                         break;
                     }
