@@ -48,12 +48,30 @@ impl Scanner {
     fn scan_tokens(mut self, source: &[u8]) -> Result<Vec<Token>, Error> {
         while let Some(&char) = source.get(self.current) {
             match char {
+                b'$' => {
+                    if self.r#match(source, b'$') {
+                        while let Some(&char) = source.get(self.current + 1) {
+                            if char == b'\n' {
+                                break;
+                            }
+                            self.current += 1;
+                        }
+                        self.advance();
+                    } else {
+                        self.errors.push(ScanError::UnexpectedCharacter {
+                            line: self.line,
+                            character: char as char,
+                        });
+                        self.advance();
+                    }
+                }
                 b'#' => {
                     if self.r#match(source, b'#') {
                         if self.r#match(source, b'=') {
                             self.handle_multiline_comment(source)
                         } else {
-                            self.handle_data_label(source)
+                            self.handle_data_label(source);
+                            self.handle_data_set(source);
                         }
                     } else {
                         self.errors.push(ScanError::UnexpectedCharacter {
@@ -82,6 +100,11 @@ impl Scanner {
         } else {
             Ok(self.tokens)
         }
+    }
+
+    fn handle_data_set(&mut self, source: &[u8]) {
+        return;
+        while let Some(&char) = source.get(self.current) {}
     }
 
     fn handle_multiline_comment(&mut self, source: &[u8]) {
@@ -172,25 +195,25 @@ mod tests {
 
     #[test]
     fn scan_data_label() {
-        let tokens = scan_tokens(b"##.mY/d atalabEl=").unwrap();
+        let tokens = scan_tokens(b"##.mY/d atalabEl =").unwrap();
         assert_eq!(
             tokens,
             vec![Token {
                 line: 1,
                 r#type: TokenType::DataLabel("MYDATALABEL".into())
             }]
-        )
+        );
     }
 
     #[test]
     fn scan_multiline_comment() {
         let tokens = scan_tokens(
             b"
-            ##label 1=
-            ##= this is a comment anything
-            can be put here
-            ##END=
-        ",
+                ##label 1=
+                ##= this is a comment anything
+                can be put here
+                ##END=
+            ",
         )
         .unwrap();
         assert_eq!(
@@ -205,6 +228,53 @@ mod tests {
                     r#type: TokenType::DataLabel("END".into())
                 }
             ]
+        );
+    }
+
+    #[test]
+    fn scan_inline_comment() {
+        let tokens = scan_tokens(b"  $$ this is a comment ").unwrap();
+        assert_eq!(tokens, vec![]);
+
+        let tokens = scan_tokens(b" ##foo=  $$ this is a comment ").unwrap();
+        assert_eq!(
+            tokens,
+            vec![Token {
+                line: 1,
+                r#type: TokenType::DataLabel("FOO".into())
+            }]
+        );
+    }
+
+    #[test]
+    fn scan_string_record() {
+        let tokens = scan_tokens(
+            b"
+                ##label 1 =  this is a string  \n\
+                ##label 2 = also this
+            ",
         )
+        .unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    line: 2,
+                    r#type: TokenType::DataLabel("LABEL1".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::String("this is a string".into())
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::DataLabel("LABEL2".into())
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::String("also this".into())
+                },
+            ]
+        );
     }
 }
