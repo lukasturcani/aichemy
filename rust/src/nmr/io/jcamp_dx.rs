@@ -14,6 +14,7 @@ pub enum Value {
 enum TokenType {
     DataLabel(String),
     String(String),
+    Number(f64),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -124,8 +125,19 @@ impl Scanner {
                 }
             }
         }
+        let variable_list_prefix = "(X++(Y..Y))";
         match str::from_utf8(source[self.start..self.current].trim_ascii()) {
-            Ok(string) => self.add_token(TokenType::String(string.into())),
+            Ok(string) => {
+                if let Ok(value) = string.parse::<f64>() {
+                    self.add_token(TokenType::Number(value));
+                } else if string.len() < variable_list_prefix.len() {
+                    self.add_token(TokenType::String(string.into()));
+                } else if string.starts_with(variable_list_prefix) {
+                    self.add_token(TokenType::String(string.into()));
+                } else {
+                    self.add_token(TokenType::String(string.into()));
+                }
+            }
             Err(_) => {
                 self.errors
                     .push(ScanError::InvalidString { line: self.line });
@@ -340,6 +352,56 @@ mod tests {
                     line: 5,
                     r#type: TokenType::String("and this".into())
                 }
+            ]
+        );
+    }
+
+    #[test]
+    fn scan_number_record() {
+        let tokens = scan_tokens(
+            b"
+                ##label 1 =   .32  \n\
+                ##label 2 = -43.32 $$ ignore me
+                ##label 3 = 42
+                ##label 4 = 42e12
+            ",
+        )
+        .unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    line: 2,
+                    r#type: TokenType::DataLabel("LABEL1".into())
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(0.32)
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::DataLabel("LABEL2".into())
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(-42.32)
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::DataLabel("LABEL3".into())
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::Number(42.),
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::DataLabel("LABEL4".into())
+                },
+                Token {
+                    line: 6,
+                    r#type: TokenType::Number(42e12),
+                },
             ]
         );
     }
