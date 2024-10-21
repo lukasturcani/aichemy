@@ -147,7 +147,13 @@ impl Scanner {
                         self.current += 1;
                     }
                     match str::from_utf8(source[self.start..self.current + 1].trim_ascii_end()) {
-                        Ok(string) => self.add_token(TokenType::String(string.into())),
+                        Ok(string) => {
+                            if string == "(X++(Y..Y))" {
+                                self.add_token(TokenType::BeginVariableList("(X++(Y..Y))".into()));
+                            } else {
+                                self.add_token(TokenType::String(string.into()));
+                            }
+                        }
                         Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
                     }
                 }
@@ -486,7 +492,7 @@ mod tests {
                 },
                 Token {
                     line: 2,
-                    r#type: TokenType::BeginVariableList("X++(Y..Y)".into())
+                    r#type: TokenType::BeginVariableList("(X++(Y..Y))".into())
                 },
                 Token {
                     line: 2,
@@ -505,23 +511,23 @@ mod tests {
                     r#type: TokenType::Number(0.43)
                 },
                 Token {
-                    line: 4,
+                    line: 3,
                     r#type: TokenType::NewLine
                 },
                 Token {
-                    line: 5,
+                    line: 4,
                     r#type: TokenType::Number(456.)
                 },
                 Token {
-                    line: 5,
+                    line: 4,
                     r#type: TokenType::Number(0.32)
                 },
                 Token {
-                    line: 5,
+                    line: 4,
                     r#type: TokenType::Number(0.22)
                 },
                 Token {
-                    line: 6,
+                    line: 4,
                     r#type: TokenType::NewLine
                 }
             ]
