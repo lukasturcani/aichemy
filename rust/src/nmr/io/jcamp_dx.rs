@@ -104,6 +104,7 @@ impl Scanner {
     fn handle_data_set(&mut self, source: &[u8]) {
         while let Some(&char) = source.get(self.current) {
             match char {
+                b'<' => self.handle_multiline_string(source),
                 b'$' => {
                     if self.r#match(source, b'$') {
                         self.handle_inline_comment(source);
@@ -159,6 +160,25 @@ impl Scanner {
                 }
                 _ => self.advance(),
             }
+        }
+    }
+
+    fn handle_multiline_string(&mut self, source: &[u8]) {
+        while let Some(&char) = source.get(self.current) {
+            match char {
+                b'\n' => {
+                    self.line += 1;
+                    self.current += 1;
+                }
+                b'>' => {
+                    break;
+                }
+                _ => self.current += 1,
+            }
+        }
+        match str::from_utf8(&source[self.start + 1..self.current]) {
+            Ok(string) => self.add_token(TokenType::String(string.into())),
+            Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
         }
     }
 
@@ -403,6 +423,59 @@ mod tests {
                     line: 6,
                     r#type: TokenType::NewLine
                 }
+            ]
+        );
+    }
+
+    #[test]
+    fn scan_multiline_string_record() {
+        let tokens = scan_tokens(
+            b"
+                ##label 1 =  <this is a string>  \n\
+                ##label 2 = <also this\n  foo>
+                ##label 3 = <>
+            ",
+        )
+        .unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    line: 2,
+                    r#type: TokenType::DataLabel("LABEL1".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::String("this is a string".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::NewLine
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::DataLabel("LABEL2".into())
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::String("also this\n  foo".into())
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::NewLine
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::DataLabel("LABEL3".into())
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::String("".into())
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::NewLine
+                },
             ]
         );
     }
