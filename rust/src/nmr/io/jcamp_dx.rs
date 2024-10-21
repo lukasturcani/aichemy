@@ -143,13 +143,14 @@ impl Scanner {
                         {
                             break;
                         }
+                        self.current += 1;
                     }
                     match str::from_utf8(source[self.start..self.current + 1].trim_ascii_end()) {
                         Ok(string) => self.add_token(TokenType::String(string.into())),
                         Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
                     }
                 }
-                _ => self.current += 1,
+                _ => self.advance(),
             }
         }
     }
@@ -292,16 +293,24 @@ mod tests {
                     r#type: TokenType::DataLabel("LABEL1".into())
                 },
                 Token {
-                    line: 3,
+                    line: 2,
                     r#type: TokenType::String("foo".into()),
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::NewLine
                 },
                 Token {
                     line: 5,
                     r#type: TokenType::DataLabel("END".into())
                 },
                 Token {
-                    line: 6,
+                    line: 5,
                     r#type: TokenType::String("bar".into()),
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::NewLine
                 },
             ]
         );
@@ -315,16 +324,10 @@ mod tests {
         let tokens = scan_tokens(b" ##foo=  $$ this is a comment ").unwrap();
         assert_eq!(
             tokens,
-            vec![
-                Token {
-                    line: 1,
-                    r#type: TokenType::DataLabel("FOO".into())
-                },
-                Token {
-                    line: 1,
-                    r#type: TokenType::String("".into()),
-                },
-            ]
+            vec![Token {
+                line: 1,
+                r#type: TokenType::DataLabel("FOO".into())
+            },]
         );
     }
 
@@ -335,6 +338,8 @@ mod tests {
                 ##label 1 =  this is a string  \n\
                 ##label 2 = also this $$ ignore me
                 ##label 3 = and this
+                ##label 4 =
+                ##label 5 = foo
             ",
         )
         .unwrap();
@@ -346,8 +351,12 @@ mod tests {
                     r#type: TokenType::DataLabel("LABEL1".into())
                 },
                 Token {
-                    line: 3,
+                    line: 2,
                     r#type: TokenType::String("this is a string".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::NewLine
                 },
                 Token {
                     line: 3,
@@ -358,12 +367,40 @@ mod tests {
                     r#type: TokenType::String("also this".into())
                 },
                 Token {
+                    line: 3,
+                    r#type: TokenType::NewLine
+                },
+                Token {
                     line: 4,
                     r#type: TokenType::DataLabel("LABEL3".into())
                 },
                 Token {
-                    line: 5,
+                    line: 4,
                     r#type: TokenType::String("and this".into())
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::NewLine
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::DataLabel("LABEL4".into())
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::NewLine
+                },
+                Token {
+                    line: 6,
+                    r#type: TokenType::DataLabel("LABEL5".into())
+                },
+                Token {
+                    line: 6,
+                    r#type: TokenType::String("foo".into())
+                },
+                Token {
+                    line: 6,
+                    r#type: TokenType::NewLine
                 }
             ]
         );
