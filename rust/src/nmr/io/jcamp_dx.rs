@@ -117,8 +117,9 @@ impl Scanner {
                 }
                 b'#' => {
                     if source.get(self.current + 1) == Some(&b'#') {
-                        self.current -= 1;
                         break;
+                    } else {
+                        self.current += 1;
                     }
                 }
                 _ if Scanner::is_number_start(char) => {
