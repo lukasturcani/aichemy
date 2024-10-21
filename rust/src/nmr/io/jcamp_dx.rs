@@ -426,8 +426,12 @@ mod tests {
                     r#type: TokenType::DataLabel("LABEL1".into())
                 },
                 Token {
-                    line: 3,
+                    line: 2,
                     r#type: TokenType::Number(0.32)
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::NewLine
                 },
                 Token {
                     line: 3,
@@ -438,20 +442,32 @@ mod tests {
                     r#type: TokenType::Number(-42.32)
                 },
                 Token {
+                    line: 3,
+                    r#type: TokenType::NewLine
+                },
+                Token {
                     line: 4,
                     r#type: TokenType::DataLabel("LABEL3".into())
                 },
                 Token {
-                    line: 5,
+                    line: 4,
                     r#type: TokenType::Number(42.),
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::NewLine
                 },
                 Token {
                     line: 5,
                     r#type: TokenType::DataLabel("LABEL4".into())
                 },
                 Token {
-                    line: 6,
+                    line: 5,
                     r#type: TokenType::Number(42e12),
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::NewLine
                 },
             ]
         );
