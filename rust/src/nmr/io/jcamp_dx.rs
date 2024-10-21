@@ -15,6 +15,8 @@ enum TokenType {
     DataLabel(String),
     String(String),
     Number(f64),
+    BeginVariableList(String),
+    NewLine,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,6 +29,7 @@ struct Token {
 enum ScanError {
     UnexpectedCharacter { line: usize, character: char },
     InvalidString { line: usize },
+    ExpectedNumber { line: usize },
 }
 
 struct Scanner {
@@ -55,11 +58,10 @@ impl Scanner {
                     if self.r#match(source, b'$') {
                         self.handle_inline_comment(source);
                     } else {
-                        self.errors.push(ScanError::UnexpectedCharacter {
+                        self.add_error(ScanError::UnexpectedCharacter {
                             line: self.line,
                             character: char as char,
                         });
-                        self.advance();
                     }
                 }
                 b'#' => {
@@ -71,11 +73,10 @@ impl Scanner {
                             self.handle_data_set(source);
                         }
                     } else {
-                        self.errors.push(ScanError::UnexpectedCharacter {
+                        self.add_error(ScanError::UnexpectedCharacter {
                             line: self.line,
                             character: char as char,
                         });
-                        self.advance();
                     }
                 }
                 b' ' | b'\t' | b'\r' => self.advance(),
@@ -83,13 +84,10 @@ impl Scanner {
                     self.line += 1;
                     self.advance();
                 }
-                _ => {
-                    self.errors.push(ScanError::UnexpectedCharacter {
-                        line: self.line,
-                        character: char as char,
-                    });
-                    self.advance();
-                }
+                _ => self.add_error(ScanError::UnexpectedCharacter {
+                    line: self.line,
+                    character: char as char,
+                }),
             }
         }
         if !self.errors.is_empty() {
@@ -99,20 +97,23 @@ impl Scanner {
         }
     }
 
+    fn is_number_start(char: u8) -> bool {
+        char.is_ascii_digit() || char == b'+' || char == b'-' || char == b'.'
+    }
+
     fn handle_data_set(&mut self, source: &[u8]) {
         while let Some(&char) = source.get(self.current) {
             match char {
                 b'$' => {
-                    if source.get(self.current + 1) == Some(&b'$') {
-                        self.current -= 1;
-                        break;
+                    if self.r#match(source, b'$') {
+                        self.handle_inline_comment(source);
                     } else {
                         self.current += 1;
                     }
                 }
                 b'\n' => {
+                    self.add_token(TokenType::NewLine);
                     self.line += 1;
-                    self.current += 1;
                 }
                 b'#' => {
                     if source.get(self.current + 1) == Some(&b'#') {
@@ -120,28 +121,35 @@ impl Scanner {
                         break;
                     }
                 }
-                _ => {
-                    self.current += 1;
+                _ if Scanner::is_number_start(char) => {
+                    while let Some(next) = source.get(self.current + 1) {
+                        if next.is_ascii_whitespace() {
+                            break;
+                        }
+                        self.current += 1;
+                    }
+                    match str::from_utf8(&source[self.start..self.current + 1]) {
+                        Ok(string) => match string.parse::<f64>() {
+                            Ok(number) => self.add_token(TokenType::Number(number)),
+                            Err(_) => self.add_error(ScanError::ExpectedNumber { line: self.line }),
+                        },
+                        Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
+                    }
                 }
-            }
-        }
-        let variable_list_prefix = "(X++(Y..Y))";
-        match str::from_utf8(source[self.start..self.current].trim_ascii()) {
-            Ok(string) => {
-                if let Ok(value) = string.parse::<f64>() {
-                    self.add_token(TokenType::Number(value));
-                } else if string.len() < variable_list_prefix.len() {
-                    self.add_token(TokenType::String(string.into()));
-                } else if string.starts_with(variable_list_prefix) {
-                    self.add_token(TokenType::String(string.into()));
-                } else {
-                    self.add_token(TokenType::String(string.into()));
+                _ if char.is_ascii_graphic() => {
+                    while let Some(&next) = source.get(self.current + 1) {
+                        if (next == b'$' && source.get(self.current + 2) == Some(&b'$'))
+                            || next == b'\n'
+                        {
+                            break;
+                        }
+                    }
+                    match str::from_utf8(source[self.start..self.current + 1].trim_ascii_end()) {
+                        Ok(string) => self.add_token(TokenType::String(string.into())),
+                        Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
+                    }
                 }
-            }
-            Err(_) => {
-                self.errors
-                    .push(ScanError::InvalidString { line: self.line });
-                self.advance();
+                _ => self.current += 1,
             }
         }
     }
@@ -211,6 +219,11 @@ impl Scanner {
             r#type,
         });
         self.advance()
+    }
+
+    fn add_error(&mut self, error: ScanError) {
+        self.errors.push(error);
+        self.advance();
     }
 }
 
@@ -402,6 +415,67 @@ mod tests {
                     line: 6,
                     r#type: TokenType::Number(42e12),
                 },
+            ]
+        );
+    }
+
+    #[test]
+    fn scan_asdf_data_set() {
+        let tokens = scan_tokens(
+            b"
+                ##label 1 =  (X++(Y..Y))
+              123 0.53 0.43
+              456 0.32 0.22
+            ",
+        )
+        .unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    line: 2,
+                    r#type: TokenType::DataLabel("LABEL1".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::BeginVariableList("X++(Y..Y)".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::NewLine,
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(123.)
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(0.53)
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(0.43)
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::NewLine
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::Number(456.)
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::Number(0.32)
+                },
+                Token {
+                    line: 5,
+                    r#type: TokenType::Number(0.22)
+                },
+                Token {
+                    line: 6,
+                    r#type: TokenType::NewLine
+                }
             ]
         );
     }
