@@ -25,11 +25,12 @@ struct Token {
     r#type: TokenType,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum ScanError {
     UnexpectedCharacter { line: usize, character: char },
     InvalidString { line: usize },
     ExpectedNumber { line: usize },
+    UnterminatedString { line: usize },
 }
 
 struct Scanner {
@@ -176,9 +177,13 @@ impl Scanner {
                 _ => self.current += 1,
             }
         }
-        match str::from_utf8(&source[self.start + 1..self.current]) {
-            Ok(string) => self.add_token(TokenType::String(string.into())),
-            Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
+        if source.get(self.current).is_none() {
+            self.add_error(ScanError::UnterminatedString { line: self.line });
+        } else {
+            match str::from_utf8(&source[self.start + 1..self.current]) {
+                Ok(string) => self.add_token(TokenType::String(string.into())),
+                Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
+            }
         }
     }
 
@@ -477,6 +482,20 @@ mod tests {
                     r#type: TokenType::NewLine
                 },
             ]
+        );
+
+        let tokens = scan_tokens(
+            b"
+                ##label 1 =  <this is a string
+                ##label 2 =  foo
+            ",
+        );
+        assert_eq!(
+            tokens,
+            Err(Error::Parse(format!(
+                "{:?}",
+                vec![ScanError::UnterminatedString { line: 4 }]
+            )))
         );
     }
 
