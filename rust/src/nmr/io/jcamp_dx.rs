@@ -262,16 +262,10 @@ mod tests {
         let tokens = scan_tokens(b"##.mY/d atalabEl =").unwrap();
         assert_eq!(
             tokens,
-            vec![
-                Token {
-                    line: 1,
-                    r#type: TokenType::DataLabel("MYDATALABEL".into())
-                },
-                Token {
-                    line: 1,
-                    r#type: TokenType::String("".into())
-                }
-            ]
+            vec![Token {
+                line: 1,
+                r#type: TokenType::DataLabel("MYDATALABEL".into())
+            },]
         );
     }
 
