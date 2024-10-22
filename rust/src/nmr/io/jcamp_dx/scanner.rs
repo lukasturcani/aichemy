@@ -3,8 +3,8 @@ use std::str;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
-    line: usize,
-    r#type: TokenType,
+    pub line: usize,
+    pub r#type: TokenType,
 }
 
 #[derive(Debug, Clone, PartialEq)]

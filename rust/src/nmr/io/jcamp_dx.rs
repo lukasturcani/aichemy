@@ -3,6 +3,7 @@ use std::str;
 
 use super::Error;
 
+mod parser;
 mod scanner;
 
 #[derive(Debug, PartialEq, Clone)]
