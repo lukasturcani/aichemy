@@ -22,7 +22,8 @@ impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
-    fn parse(&mut self) -> Result<HashMap<String, Value>, ParseError> {
+
+    pub fn parse(&mut self) -> Result<HashMap<String, Value>, ParseError> {
         let mut map = HashMap::new();
         while self.current < self.tokens.len() {
             let (key, value) = self.record()?;
@@ -64,6 +65,30 @@ impl Parser {
     }
 
     fn variable_list(&mut self) -> Result<Vec<f64>, ParseError> {
-        todo!()
+        let mut take_number = false;
+        let mut array = Vec::new();
+        while let Some(token) = self.tokens.get(self.current) {
+            match token.r#type {
+                TokenType::Number(number) if take_number => {
+                    self.current += 1;
+                    array.push(number);
+                }
+                TokenType::Number(_) => {
+                    self.current += 1;
+                    take_number = true;
+                }
+                TokenType::NewLine => {
+                    self.current += 1;
+                    take_number = false;
+                }
+                TokenType::DataLabel(_) => break,
+                _ => {
+                    return Err(ParseError::UnexpectedToken(
+                        "expected number or data label".into(),
+                    ))
+                }
+            }
+        }
+        Ok(array)
     }
 }
