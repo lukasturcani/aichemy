@@ -59,7 +59,10 @@ impl Parser {
                 self.current += 1;
                 Ok(data_label.clone())
             }
-            _ => Err(ParseError::UnexpectedToken("expected data label".into())),
+            _ => Err(ParseError::UnexpectedToken(format!(
+                "line {}: expected data label",
+                self.tokens[self.current].line
+            ))),
         }
     }
 
