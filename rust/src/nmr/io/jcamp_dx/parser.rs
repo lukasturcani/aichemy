@@ -1,29 +1,46 @@
 use std::collections::HashMap;
 
-use super::scanner::{Token, TokenType};
+use crate::nmr::io::Error;
 
+use super::scanner::{scan_tokens, Token, TokenType};
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     String(String),
     Number(f64),
     Array(Vec<f64>),
 }
 
-pub struct Parser {
+#[derive(Debug, Clone, PartialEq)]
+enum ParseError {
+    UnexpectedToken(String),
+}
+
+pub fn parse(source: &[u8]) -> Result<HashMap<String, Value>, Error> {
+    Parser::new(scan_tokens(source)?)
+        .parse()
+        .map_err(|error| Error::Parse(format!("{:?}", error)))
+}
+
+/// A parser for JCAMP-DX files.
+///
+/// This parser is based on the JCAMP-DX specification, defined
+/// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
+/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_NMR_1993.pdf) and
+/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
+/// TODO: stuff
+#[derive(Clone, Debug, Default)]
+struct Parser {
     tokens: Vec<Token>,
     current: usize,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum ParseError {
-    UnexpectedToken(String),
-}
-
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<HashMap<String, Value>, ParseError> {
+    fn parse(&mut self) -> Result<HashMap<String, Value>, ParseError> {
         let mut map = HashMap::new();
         while self.current < self.tokens.len() {
             let (key, value) = self.record()?;

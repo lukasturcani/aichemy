@@ -1,11 +1,9 @@
-use aichemy::nmr::io::jcamp_dx::{Parser, Value};
+use aichemy::nmr::io::jcamp_dx::{self, Value};
 
 #[test]
 fn test_parse() {
-    let parser = Parser::new();
-    let items = parser
-        .parse(
-            "
+    let items = jcamp_dx::parse(
+        b"
         ##TITLE= diff
         ##JCAMPDX= 5.0         $$ Bruker NMR JCAMP-DX V1.0
         ##DATA TYPE= NMR Spectrum
@@ -30,8 +28,8 @@ fn test_parse() {
                    16383       2259260      -5242968      -7176216      -1616072
                     7915       3754660       -142736        -85762      -2471282
         ##END=",
-        )
-        .unwrap();
+    )
+    .unwrap();
     assert_eq!(
         {
             let mut keys = items.keys().collect::<Vec<_>>();
@@ -61,19 +59,19 @@ fn test_parse() {
             expected
         }
     );
-    assert_eq!(items["TITLE"], Value::Text("diff".into()));
+    assert_eq!(items["TITLE"], Value::String("diff".into()));
     assert_eq!(items["JCAMPDX"], Value::Number(5.0));
-    assert_eq!(items["DATATYPE"], Value::Text("NMR Spectrum".into()));
+    assert_eq!(items["DATATYPE"], Value::String("NMR Spectrum".into()));
     assert_eq!(items[".OBSERVEFREQUENCY"], Value::Number(100.4));
-    assert_eq!(items[".OBSERVENUCLEUS"], Value::Text("^13C".into()));
+    assert_eq!(items[".OBSERVENUCLEUS"], Value::String("^13C".into()));
     assert_eq!(
         items["SPECTROMETERDATASYSTEM"],
-        Value::Text("JEOL GX 400".into())
+        Value::String("JEOL GX 400".into())
     );
     assert_eq!(items["$AQMOD"], Value::Number(1.));
-    assert_eq!(items["$AUNM"], Value::Text("au_zgsino".into()));
+    assert_eq!(items["$AUNM"], Value::String("au_zgsino".into()));
     assert_eq!(items["$BF1"], Value::Number(100.4));
-    assert_eq!(items["$CPDPRGB"], Value::Text("waltz16".into()));
+    assert_eq!(items["$CPDPRGB"], Value::String("waltz16".into()));
     assert_eq!(
         items["$D"],
         Value::Array(vec![
@@ -81,8 +79,8 @@ fn test_parse() {
             0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.
         ])
     );
-    assert_eq!(items["$DBPNAM0"], Value::Text("".into()));
-    assert_eq!(items["$DECNUC"], Value::Text("1H".into()));
+    assert_eq!(items["$DBPNAM0"], Value::String("".into()));
+    assert_eq!(items["$DECNUC"], Value::String("1H".into()));
     assert_eq!(
         items["$IN"],
         Value::Array(vec![
