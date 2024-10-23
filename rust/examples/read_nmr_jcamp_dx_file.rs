@@ -16,6 +16,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     match records {
         Ok(records) => println!("{:#?}", records),
         Err(Error::Parse(error)) => println!("{}", error),
+        other => println!("{:?}", other),
     };
     Ok(())
 }

@@ -15,9 +15,8 @@ pub enum Error {
 
     /// Failed to read a file.
     #[error("Failed to read file: {source}")]
-    Read { source: io::Error },
-
-    /// Failed to write a file.
-    #[error("Failed to write file: {0}")]
-    Write(String),
+    Read {
+        /// The underlying error.
+        source: io::Error,
+    },
 }
