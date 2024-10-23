@@ -25,6 +25,7 @@ enum ScanError {
     UnexpectedCharacter { line: usize, character: char },
     InvalidString { line: usize },
     ExpectedNumber { line: usize },
+    ExpectedInt { line: usize },
     UnterminatedString { line: usize },
     ExpectedDot { line: usize },
 }
@@ -153,6 +154,22 @@ impl Scanner {
         }
     }
 
+    fn handle_int(&mut self, source: &[u8]) {
+        while let Some(next) = source.get(self.current + 1) {
+            if next.is_ascii_whitespace() {
+                break;
+            }
+            self.current += 1;
+        }
+        match str::from_utf8(&source[self.start..self.current + 1]) {
+            Ok(string) => match string.parse::<usize>() {
+                Ok(number) => self.add_token(TokenType::Int(number)),
+                Err(_) => self.add_error(ScanError::ExpectedInt { line: self.line }),
+            },
+            Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
+        }
+    }
+
     fn handle_array_prefix(&mut self, source: &[u8]) {
         while let Some(token) = source.get(self.current) {
             match token {
@@ -168,7 +185,7 @@ impl Scanner {
                         self.add_error(ScanError::ExpectedDot { line: self.line });
                     }
                 }
-                _ => self.handle_number(source),
+                _ => self.handle_int(source),
             }
         }
     }
