@@ -23,6 +23,9 @@ fn test_parse() {
         ##$IN= (0..4)
         0.001 0.002 0.003
         0.004 0.005
+        ##$SUBNAM= (0..3)
+        <foo> <bar>
+        <> <bam>
         ##MINY= -27593530
         ##XYDATA=(X++(Y..Y))
                    16383       2259260      -5242968      -7176216      -1616072
@@ -52,6 +55,7 @@ fn test_parse() {
                 "$DBPNAM0",
                 "$DECNUC",
                 "$IN",
+                "$SUBNAM",
                 "MINY",
                 "XYDATA",
                 "END",
@@ -79,6 +83,10 @@ fn test_parse() {
     assert_eq!(
         items["$IN"],
         Value::NumberArray(vec![0.001, 0.002, 0.003, 0.004, 0.005])
+    );
+    assert_eq!(
+        items["$SUBNAM"],
+        Value::StringArray(vec!["foo".into(), "bar".into(), "".into(), "bam".into()])
     );
     assert_eq!(items["MINY"], Value::Number(-27593530.));
     assert_eq!(
