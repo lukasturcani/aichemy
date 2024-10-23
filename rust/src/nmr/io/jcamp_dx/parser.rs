@@ -111,10 +111,29 @@ impl Parser {
                 self.consume_newlines();
                 Ok(Value::Array(self.variable_list()?))
             }
+            TokenType::OpenBracket => self.array()?,
             _ => Err(ParseError::UnexpectedToken("expected value".into())),
         };
         self.consume_newlines();
         result
+    }
+
+    fn array(&mut self) -> Result<Value, ParseError> {
+        self.consume(TokenType::OpenBracket)?;
+        self.consume(TokenType::Int(_))?;
+        self.consume(TokenType::DoubleDot)?;
+        self.consume(TokenType::Int(max_index))?;
+        self.consume(TokenType::CloseBracket)?;
+        let mut array = Vec::with_capacity(max_index + 1);
+        while let Some(token) = self.tokens.get(self.current) {
+            match token.r#type {
+                TokenType::Number(number) => array.push(number),
+                TokenType::NewLine => {}
+                TokenType::DataLabel(_) => break,
+                _ => return Err(ParseError::UnexpectedToken("expected number")),
+            }
+        }
+        Ok(Value::Array(array))
     }
 
     fn consume_newlines(&mut self) {
