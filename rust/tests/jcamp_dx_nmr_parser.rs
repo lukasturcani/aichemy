@@ -73,17 +73,17 @@ fn test_parse() {
     assert_eq!(items["$AUNM"], Value::String("au_zgsino".into()));
     assert_eq!(items["$BF1"], Value::Number(100.4));
     assert_eq!(items["$CPDPRGB"], Value::String("waltz16".into()));
-    assert_eq!(items["$D"], Value::Array(vec![0., 1., 2., 3.]));
+    assert_eq!(items["$D"], Value::NumberArray(vec![0., 1., 2., 3.]));
     assert_eq!(items["$DBPNAM0"], Value::String("".into()));
     assert_eq!(items["$DECNUC"], Value::String("1H".into()));
     assert_eq!(
         items["$IN"],
-        Value::Array(vec![0.001, 0.002, 0.003, 0.004, 0.005])
+        Value::NumberArray(vec![0.001, 0.002, 0.003, 0.004, 0.005])
     );
     assert_eq!(items["MINY"], Value::Number(-27593530.));
     assert_eq!(
         items["XYDATA"],
-        Value::Array(vec![
+        Value::NumberArray(vec![
             2259260., -5242968., -7176216., -1616072., 3754660., -142736., -85762., -2471282.
         ])
     );

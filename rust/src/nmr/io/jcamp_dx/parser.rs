@@ -8,7 +8,8 @@ use super::scanner::{scan_tokens, Token, TokenType};
 pub enum Value {
     String(String),
     Number(f64),
-    Array(Vec<f64>),
+    NumberArray(Vec<f64>),
+    StringArray(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -155,7 +156,7 @@ impl Parser {
             TokenType::BeginVariableList(_) => {
                 self.current += 1;
                 self.consume_newlines();
-                Ok(Value::Array(self.variable_list()?))
+                Ok(Value::NumberArray(self.variable_list()?))
             }
             TokenType::OpenBracket => self.array(),
             _ => Err(ParseError::UnexpectedToken(
@@ -182,6 +183,18 @@ impl Parser {
         self.consume_type(&TokenType::OpenBracket)?;
         self.consume_type(&TokenType::Int(0))?;
         self.consume_type(&TokenType::DoubleDot)?;
+
+        match self.tokens.get(self.current + 2) {
+            Some(token) => match &token.r#type {
+                TokenType::Number(_) => self.number_array(),
+                TokenType::String(_) => self.string_array(),
+                _ => Err(ParseError::UnexpectedToken(token.clone())),
+            },
+            None => Err(ParseError::UnexpectedEndOfFile),
+        }
+    }
+
+    fn number_array(&mut self) -> Result<Value, ParseError> {
         let mut array = Vec::new();
         if let TokenType::Int(max_index) = self.consume_type(&TokenType::Int(0))?.r#type {
             array.reserve(max_index + 1);
@@ -202,7 +215,31 @@ impl Parser {
                 }
             }
         }
-        Ok(Value::Array(array))
+        Ok(Value::NumberArray(array))
+    }
+
+    fn string_array(&mut self) -> Result<Value, ParseError> {
+        let mut array = Vec::new();
+        if let TokenType::Int(max_index) = self.consume_type(&TokenType::Int(0))?.r#type {
+            array.reserve(max_index + 1);
+        };
+        self.consume_type(&TokenType::CloseBracket)?;
+        while let Some(token) = self.tokens.get(self.current) {
+            match &token.r#type {
+                TokenType::String(string) => {
+                    array.push(string.clone());
+                    self.current += 1;
+                }
+                TokenType::NewLine => self.current += 1,
+                TokenType::DataLabel(_) => break,
+                _ => {
+                    return Err(ParseError::UnexpectedToken(
+                        self.tokens[self.current].clone(),
+                    ));
+                }
+            }
+        }
+        Ok(Value::StringArray(array))
     }
 
     fn consume_newlines(&mut self) {
