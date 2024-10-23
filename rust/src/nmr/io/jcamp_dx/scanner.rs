@@ -61,6 +61,7 @@ impl Scanner {
                         if self.r#match(source, b'=') {
                             self.handle_multiline_comment(source)
                         } else {
+                            self.current += 1;
                             self.handle_data_label(source);
                             self.handle_data_set(source);
                         }
@@ -210,6 +211,17 @@ impl Scanner {
 
     fn handle_data_label(&mut self, source: &[u8]) {
         let mut identifier = String::new();
+        match source.get(self.current) {
+            Some(b'.') => {
+                identifier.push('.');
+                self.current += 1;
+            }
+            Some(b'$') => {
+                identifier.push('$');
+                self.current += 1;
+            }
+            _ => {}
+        }
         while let Some(&current) = source.get(self.current) {
             if current == b'=' {
                 break;
@@ -266,7 +278,7 @@ mod tests {
             tokens,
             vec![Token {
                 line: 1,
-                r#type: TokenType::DataLabel("MYDATALABEL".into())
+                r#type: TokenType::DataLabel(".MYDATALABEL".into())
             },]
         );
     }
