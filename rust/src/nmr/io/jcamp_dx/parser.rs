@@ -69,7 +69,11 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
 /// This parser is based on the JCAMP-DX specification, defined
 /// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
 /// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_NMR_1993.pdf) and
-/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
+/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf).
+///
+/// Note that key values are modified according to the JCAMP-DX specification, which
+/// means that letters are converted to uppercase and non-alphanumeric characters are
+/// ignored, with the exception of leading "." or "$" characters.
 ///
 /// # Errors
 /// This function will return an error if the source is not a valid JCAMP-DX file.
@@ -97,6 +101,7 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
 /// );
 /// assert_eq!(items["TITLE"], Value::String("diff".into()));
 /// assert_eq!(items["JCAMPDX"], Value::Number(5.0));
+/// assert_eq!(items[".OBSERVEFREQUENCY"], Value::Number(100.4));
 /// assert_eq!(items["$SUBNAM"], Value::StringArray(vec![
 ///     "foo".into(), "bar".into(), "".into(), "bam".into()
 /// ]));
