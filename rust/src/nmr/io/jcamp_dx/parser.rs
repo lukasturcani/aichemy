@@ -88,7 +88,7 @@ impl Parser {
     }
 
     fn data_set(&mut self) -> Result<Value, ParseError> {
-        match &self.tokens[self.current].r#type {
+        let result = match &self.tokens[self.current].r#type {
             TokenType::String(string) => {
                 self.current += 1;
                 Ok(Value::String(string.clone()))
@@ -102,7 +102,13 @@ impl Parser {
                 Ok(Value::Array(self.variable_list()?))
             }
             _ => Err(ParseError::UnexpectedToken("expected value".into())),
+        };
+        if let Some(token) = self.tokens.get(self.current) {
+            if token.r#type == TokenType::NewLine {
+                self.current += 1;
+            }
         }
+        result
     }
 
     fn variable_list(&mut self) -> Result<Vec<f64>, ParseError> {
