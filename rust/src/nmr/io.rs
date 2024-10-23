@@ -3,7 +3,6 @@
 use thiserror::Error;
 
 pub mod jcamp_dx;
-pub mod pulseprogram;
 
 /// Error which may occur when doing NMR I/O.
 #[derive(Debug, Error, PartialEq)]
