@@ -84,20 +84,20 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
 /// use aichemy::nmr::io::jcamp_dx::{self, Value};
 /// let items = jcamp_dx::parse(
 ///     "
-///     ##TITLE= diff
-///     ##JCAMPDX= 5.0         $$ Bruker NMR JCAMP-DX V1.0
-///     ##.OBSERVE FREQUENCY= 100.4
-///     ##$AUNM= <au_zgsino>
-///     ##$D= (0..3)
+///     ###TITLE= diff
+///     ###JCAMPDX= 5.0         $$ Bruker NMR JCAMP-DX V1.0
+///     ###.OBSERVE FREQUENCY= 100.4
+///     ###$AUNM= <au_zgsino>
+///     ###$D= (0..3)
 ///     0 1 2 3
-///     ##$DECNUC= <1H>
-///     ##$SUBNAM= (0..3)
+///     ###$DECNUC= <1H>
+///     ###$SUBNAM= (0..3)
 ///     <foo> <bar>
 ///     <> <bam>
-///     ##XYDATA=(X++(Y..Y))
+///     ###XYDATA=(X++(Y..Y))
 ///                16383       2259260      -5242968      -7176216      -1616072
 ///                 7915       3754660       -142736        -85762      -2471282
-///     ##END=",
+///     ###END=",
 /// )?;
 /// assert_eq!(items["TITLE"], Value::String("diff".into()));
 /// assert_eq!(items["JCAMPDX"], Value::Number(5.0));
