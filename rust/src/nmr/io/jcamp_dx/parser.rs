@@ -111,7 +111,7 @@ impl Parser {
                 self.consume_newlines();
                 Ok(Value::Array(self.variable_list()?))
             }
-            TokenType::OpenBracket => self.array()?,
+            TokenType::OpenBracket => self.array(),
             _ => Err(ParseError::UnexpectedToken("expected value".into())),
         };
         self.consume_newlines();
@@ -119,18 +119,59 @@ impl Parser {
     }
 
     fn array(&mut self) -> Result<Value, ParseError> {
-        self.consume(TokenType::OpenBracket)?;
-        self.consume(TokenType::Int(_))?;
-        self.consume(TokenType::DoubleDot)?;
-        self.consume(TokenType::Int(max_index))?;
-        self.consume(TokenType::CloseBracket)?;
-        let mut array = Vec::with_capacity(max_index + 1);
+        if let Some(Token {
+            r#type: TokenType::OpenBracket,
+            ..
+        }) = self.tokens.get(self.current)
+        {
+            self.current += 1;
+        } else {
+            return Err(ParseError::UnexpectedToken("expected open bracket".into()));
+        }
+        if let Some(Token {
+            r#type: TokenType::Int(_),
+            ..
+        }) = self.tokens.get(self.current)
+        {
+            self.current += 1;
+        } else {
+            return Err(ParseError::UnexpectedToken("expected int".into()));
+        }
+        if let Some(Token {
+            r#type: TokenType::DoubleDot,
+            ..
+        }) = self.tokens.get(self.current)
+        {
+            self.current += 1;
+        } else {
+            return Err(ParseError::UnexpectedToken("expected ..".into()));
+        }
+        let mut array = Vec::new();
+        if let Some(Token {
+            r#type: TokenType::Int(max_index),
+            ..
+        }) = self.tokens.get(self.current)
+        {
+            array.reserve(max_index + 1);
+            self.current += 1;
+        } else {
+            return Err(ParseError::UnexpectedToken("expected int".into()));
+        }
+        if let Some(Token {
+            r#type: TokenType::CloseBracket,
+            ..
+        }) = self.tokens.get(self.current)
+        {
+            self.current += 1;
+        } else {
+            return Err(ParseError::UnexpectedToken("expected close bracket".into()));
+        }
         while let Some(token) = self.tokens.get(self.current) {
             match token.r#type {
                 TokenType::Number(number) => array.push(number),
                 TokenType::NewLine => {}
                 TokenType::DataLabel(_) => break,
-                _ => return Err(ParseError::UnexpectedToken("expected number")),
+                _ => return Err(ParseError::UnexpectedToken("expected number".into())),
             }
         }
         Ok(Value::Array(array))
