@@ -168,8 +168,11 @@ impl Parser {
         }
         while let Some(token) = self.tokens.get(self.current) {
             match token.r#type {
-                TokenType::Number(number) => array.push(number),
-                TokenType::NewLine => {}
+                TokenType::Number(number) => {
+                    array.push(number);
+                    self.current += 1;
+                }
+                TokenType::NewLine => self.current += 1,
                 TokenType::DataLabel(_) => break,
                 _ => return Err(ParseError::UnexpectedToken("expected number".into())),
             }
