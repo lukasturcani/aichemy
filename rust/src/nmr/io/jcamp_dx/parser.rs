@@ -40,13 +40,34 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    fn parse(&mut self) -> Result<HashMap<String, Value>, ParseError> {
+    fn parse(&mut self) -> Result<HashMap<String, Value>, Vec<ParseError>> {
         let mut map = HashMap::new();
+        let mut errors = Vec::new();
         while self.current < self.tokens.len() {
-            let (key, value) = self.record()?;
-            map.insert(key, value);
+            match self.record() {
+                Ok((key, value)) => {
+                    map.insert(key, value);
+                }
+                Err(error) => {
+                    errors.push(error);
+                    self.synchronize();
+                }
+            }
         }
-        Ok(map)
+        if !errors.is_empty() {
+            Err(errors)
+        } else {
+            Ok(map)
+        }
+    }
+
+    fn synchronize(&mut self) {
+        while let Some(token) = self.tokens.get(self.current) {
+            if let TokenType::DataLabel(_) = token.r#type {
+                break;
+            }
+            self.current += 1;
+        }
     }
 
     fn record(&mut self) -> Result<(String, Value), ParseError> {
