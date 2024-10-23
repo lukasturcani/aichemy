@@ -13,6 +13,7 @@ pub enum TokenType {
     String(String),
     Number(f64),
     BeginVariableList(String),
+    BeginArray,
     NewLine,
 }
 
@@ -116,6 +117,15 @@ impl Scanner {
                         self.current += 1;
                     }
                 }
+                b'(' => {
+                    if let Some(next) = source.get(self.current + 1) {
+                        if next.is_ascii_digit() {
+                            self.handle_array(source);
+                        } else {
+                            self.handle_string(source);
+                        }
+                    }
+                }
                 _ if Scanner::is_number_start(char) => {
                     while let Some(next) = source.get(self.current + 1) {
                         if next.is_ascii_whitespace() {
@@ -131,28 +141,32 @@ impl Scanner {
                         Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
                     }
                 }
-                _ if char.is_ascii_graphic() => {
-                    while let Some(&next) = source.get(self.current + 1) {
-                        if (next == b'$' && source.get(self.current + 2) == Some(&b'$'))
-                            || next == b'\n'
-                        {
-                            break;
-                        }
-                        self.current += 1;
-                    }
-                    match str::from_utf8(source[self.start..self.current + 1].trim_ascii_end()) {
-                        Ok(string) => {
-                            if string == "(X++(Y..Y))" {
-                                self.add_token(TokenType::BeginVariableList("(X++(Y..Y))".into()));
-                            } else {
-                                self.add_token(TokenType::String(string.into()));
-                            }
-                        }
-                        Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
-                    }
-                }
+                _ if char.is_ascii_graphic() => self.handle_string(source),
                 _ => self.advance(),
             }
+        }
+    }
+
+    fn handle_array(&mut self, source: &[u8]) {
+        todo!()
+    }
+
+    fn handle_string(&mut self, source: &[u8]) {
+        while let Some(&next) = source.get(self.current + 1) {
+            if (next == b'$' && source.get(self.current + 2) == Some(&b'$')) || next == b'\n' {
+                break;
+            }
+            self.current += 1;
+        }
+        match str::from_utf8(source[self.start..self.current + 1].trim_ascii_end()) {
+            Ok(string) => {
+                if string == "(X++(Y..Y))" {
+                    self.add_token(TokenType::BeginVariableList("(X++(Y..Y))".into()));
+                } else {
+                    self.add_token(TokenType::String(string.into()));
+                }
+            }
+            Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
         }
     }
 
