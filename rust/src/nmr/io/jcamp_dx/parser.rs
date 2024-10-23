@@ -70,7 +70,8 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
 /// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
 /// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_NMR_1993.pdf) and
 /// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
-pub fn parse(source: &[u8]) -> Result<HashMap<String, Value>, Error> {
+pub fn parse(source: impl AsRef<[u8]>) -> Result<HashMap<String, Value>, Error> {
+    let source = source.as_ref();
     Parser::new(scan_tokens(source)?)
         .parse()
         .map_err(|error| Error::Parse(error_msg(source, error)))

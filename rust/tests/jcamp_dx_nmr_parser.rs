@@ -3,7 +3,7 @@ use aichemy::nmr::io::jcamp_dx::{self, Value};
 #[test]
 fn test_parse() {
     let items = jcamp_dx::parse(
-        b"
+        "
         ##TITLE= diff
         ##JCAMPDX= 5.0         $$ Bruker NMR JCAMP-DX V1.0
         ##DATA TYPE= NMR Spectrum
