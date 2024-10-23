@@ -44,6 +44,7 @@ impl Parser {
         let mut map = HashMap::new();
         let mut errors = Vec::new();
         while self.current < self.tokens.len() {
+            println!("{:?}", self.tokens[self.current]);
             match self.record() {
                 Ok((key, value)) => {
                     map.insert(key, value);
@@ -99,10 +100,16 @@ impl Parser {
             }
             TokenType::BeginVariableList(_) => {
                 self.current += 1;
+                self.consume_newlines();
                 Ok(Value::Array(self.variable_list()?))
             }
             _ => Err(ParseError::UnexpectedToken("expected value".into())),
         };
+        self.consume_newlines();
+        result
+    }
+
+    fn consume_newlines(&mut self) {
         while let Some(token) = self.tokens.get(self.current) {
             if token.r#type == TokenType::NewLine {
                 self.current += 1;
@@ -110,7 +117,6 @@ impl Parser {
                 break;
             }
         }
-        result
     }
 
     fn variable_list(&mut self) -> Result<Vec<f64>, ParseError> {
