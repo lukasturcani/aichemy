@@ -44,7 +44,6 @@ impl Parser {
         let mut map = HashMap::new();
         let mut errors = Vec::new();
         while self.current < self.tokens.len() {
-            println!("{:?}", self.tokens[self.current]);
             match self.record() {
                 Ok((key, value)) => {
                     map.insert(key, value);
