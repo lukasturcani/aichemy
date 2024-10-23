@@ -1,3 +1,4 @@
+//! Tools for NMR I/O, such a reading and writing NMR files.
 use thiserror::Error;
 
 pub mod jcamp_dx;

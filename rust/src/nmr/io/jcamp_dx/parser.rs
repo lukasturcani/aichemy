@@ -1,14 +1,21 @@
 use std::{collections::HashMap, mem, str};
 
+use serde::{Deserialize, Serialize};
+
 use crate::nmr::io::Error;
 
 use super::scanner::{scan_tokens, Token, TokenType};
 
-#[derive(Clone, Debug, PartialEq)]
+/// A JCAMP-DX value.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Value {
+    /// A string.
     String(String),
+    /// A number.
     Number(f64),
+    /// An array of numbers.
     NumberArray(Vec<f64>),
+    /// An array of strings.
     StringArray(Vec<String>),
 }
 
@@ -16,13 +23,6 @@ pub enum Value {
 enum ParseError {
     UnexpectedToken(Token),
     UnexpectedEndOfFile,
-}
-
-fn line(source: &[u8], line: usize) -> Result<Option<String>, str::Utf8Error> {
-    Ok(str::from_utf8(source)?
-        .lines()
-        .nth(line - 1)
-        .map(|line| line.into()))
 }
 
 fn error_token(token: &TokenType) -> String {
@@ -64,19 +64,18 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
         .join("\n")
 }
 
+/// Parser JCAMP-DX files.
+///
+/// This parser is based on the JCAMP-DX specification, defined
+/// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
+/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_NMR_1993.pdf) and
+/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
 pub fn parse(source: &[u8]) -> Result<HashMap<String, Value>, Error> {
     Parser::new(scan_tokens(source)?)
         .parse()
         .map_err(|error| Error::Parse(error_msg(source, error)))
 }
 
-/// A parser for JCAMP-DX files.
-///
-/// This parser is based on the JCAMP-DX specification, defined
-/// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
-/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_NMR_1993.pdf) and
-/// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
-/// TODO: stuff
 #[derive(Clone, Debug, Default)]
 struct Parser {
     tokens: Vec<Token>,
