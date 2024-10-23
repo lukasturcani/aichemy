@@ -2,7 +2,7 @@
 
 use std::{fs, path::Path};
 
-use super::io::Error;
+use super::io::{jcamp_dx, Error};
 
 enum DataType {
     Float64,
@@ -38,4 +38,19 @@ fn read_bruker_binary_file(
             .map(|chunk| i32::from_be_bytes(chunk.try_into().unwrap()) as f64)
             .collect()),
     }
+}
+
+fn read_1d_spectrum(
+    binary: impl AsRef<Path>,
+    procs: impl AsRef<Path>,
+    acqus: impl AsRef<Path>,
+) -> Result<(), Error> {
+    let procs = jcamp_dx::parse(fs::read(procs).map_err(|source| Error::Read { source })?)?;
+    let acqus = jcamp_dx::parse(fs::read(acqus).map_err(|source| Error::Read { source })?)?;
+    let si = procs["$SI"];
+    let xdim = procs["$XDIM"];
+    let endianness = procs
+        .get("$BYTEORD")
+        .map_or(Endianness::Little, |byte_order| {});
+    Ok(())
 }
