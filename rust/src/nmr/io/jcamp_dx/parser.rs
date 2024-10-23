@@ -71,7 +71,16 @@ impl Parser {
     }
 
     fn record(&mut self) -> Result<(String, Value), ParseError> {
-        Ok((self.data_label()?, self.data_set()?))
+        let data_label = self.data_label()?;
+        self.consume_newlines();
+        let data_set = match self.tokens.get(self.current) {
+            Some(token) => match token.r#type {
+                TokenType::DataLabel(_) => Value::String("".into()),
+                _ => self.data_set()?,
+            },
+            None => Value::String("".into()),
+        };
+        Ok((data_label, data_set))
     }
 
     fn data_label(&mut self) -> Result<String, ParseError> {
