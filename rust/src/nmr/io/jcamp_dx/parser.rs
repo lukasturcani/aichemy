@@ -98,7 +98,7 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
 ///                16383       2259260      -5242968      -7176216      -1616072
 ///                 7915       3754660       -142736        -85762      -2471282
 ///     ##END=",
-/// );
+/// )?;
 /// assert_eq!(items["TITLE"], Value::String("diff".into()));
 /// assert_eq!(items["JCAMPDX"], Value::Number(5.0));
 /// assert_eq!(items[".OBSERVEFREQUENCY"], Value::Number(100.4));
