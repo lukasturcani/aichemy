@@ -64,12 +64,45 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
         .join("\n")
 }
 
-/// Parser JCAMP-DX files.
+/// Parse JCAMP-DX files.
 ///
 /// This parser is based on the JCAMP-DX specification, defined
 /// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
 /// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_NMR_1993.pdf) and
 /// [here](https://iupac.org/wp-content/uploads/2021/08/JCAMP-DX_MS_1994.pdf)
+///
+/// # Errors
+/// This function will return an error if the source is not a valid JCAMP-DX file.
+///
+/// # Examples
+/// ```
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use aichemy::nmr::io::jcamp_dx::{self, Value};
+/// let items = jcamp_dx::parse(
+///     "
+///     ##TITLE= diff
+///     ##JCAMPDX= 5.0         $$ Bruker NMR JCAMP-DX V1.0
+///     ##.OBSERVE FREQUENCY= 100.4
+///     ##$AUNM= <au_zgsino>
+///     ##$D= (0..3)
+///     0 1 2 3
+///     ##$DECNUC= <1H>
+///     ##$SUBNAM= (0..3)
+///     <foo> <bar>
+///     <> <bam>
+///     ##XYDATA=(X++(Y..Y))
+///                16383       2259260      -5242968      -7176216      -1616072
+///                 7915       3754660       -142736        -85762      -2471282
+///     ##END=",
+/// );
+/// assert_eq!(items["TITLE"], Value::String("diff".into()));
+/// assert_eq!(items["JCAMPDX"], Value::Number(5.0));
+/// assert_eq!(items["$SUBNAM"], Value::StringArray(vec![
+///     "foo".into(), "bar".into(), "".into(), "bam".into()
+/// ]));
+/// # Ok(())
+/// # }
+/// ```
 pub fn parse(source: impl AsRef<[u8]>) -> Result<HashMap<String, Value>, Error> {
     let source = source.as_ref();
     Parser::new(scan_tokens(source)?)
