@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, mem};
 
 use crate::nmr::io::Error;
 
@@ -13,7 +13,8 @@ pub enum Value {
 
 #[derive(Debug, Clone, PartialEq)]
 enum ParseError {
-    UnexpectedToken(String),
+    UnexpectedToken(Token),
+    UnexpectedEndOfFile,
 }
 
 pub fn parse(source: &[u8]) -> Result<HashMap<String, Value>, Error> {
@@ -89,10 +90,9 @@ impl Parser {
                 self.current += 1;
                 Ok(data_label.clone())
             }
-            _ => Err(ParseError::UnexpectedToken(format!(
-                "{:?}: expected data label",
-                self.tokens[self.current]
-            ))),
+            _ => Err(ParseError::UnexpectedToken(
+                self.tokens[self.current].clone(),
+            )),
         }
     }
 
@@ -112,60 +112,35 @@ impl Parser {
                 Ok(Value::Array(self.variable_list()?))
             }
             TokenType::OpenBracket => self.array(),
-            _ => Err(ParseError::UnexpectedToken("expected value".into())),
+            _ => Err(ParseError::UnexpectedToken(
+                self.tokens[self.current].clone(),
+            )),
         };
         self.consume_newlines();
         result
     }
 
+    fn consume_type(&mut self, expected: &TokenType) -> Result<Token, ParseError> {
+        let result = match self.tokens.get(self.current) {
+            Some(token) if mem::discriminant(&token.r#type) == mem::discriminant(expected) => {
+                Ok(token.clone())
+            }
+            Some(token) => Err(ParseError::UnexpectedToken(token.clone())),
+            None => Err(ParseError::UnexpectedEndOfFile),
+        };
+        self.current += 1;
+        result
+    }
+
     fn array(&mut self) -> Result<Value, ParseError> {
-        if let Some(Token {
-            r#type: TokenType::OpenBracket,
-            ..
-        }) = self.tokens.get(self.current)
-        {
-            self.current += 1;
-        } else {
-            return Err(ParseError::UnexpectedToken("expected open bracket".into()));
-        }
-        if let Some(Token {
-            r#type: TokenType::Int(_),
-            ..
-        }) = self.tokens.get(self.current)
-        {
-            self.current += 1;
-        } else {
-            return Err(ParseError::UnexpectedToken("expected int".into()));
-        }
-        if let Some(Token {
-            r#type: TokenType::DoubleDot,
-            ..
-        }) = self.tokens.get(self.current)
-        {
-            self.current += 1;
-        } else {
-            return Err(ParseError::UnexpectedToken("expected ..".into()));
-        }
+        self.consume_type(&TokenType::OpenBracket)?;
+        self.consume_type(&TokenType::Int(0))?;
+        self.consume_type(&TokenType::DoubleDot)?;
         let mut array = Vec::new();
-        if let Some(Token {
-            r#type: TokenType::Int(max_index),
-            ..
-        }) = self.tokens.get(self.current)
-        {
+        if let TokenType::Int(max_index) = self.consume_type(&TokenType::Int(0))?.r#type {
             array.reserve(max_index + 1);
-            self.current += 1;
-        } else {
-            return Err(ParseError::UnexpectedToken("expected int".into()));
-        }
-        if let Some(Token {
-            r#type: TokenType::CloseBracket,
-            ..
-        }) = self.tokens.get(self.current)
-        {
-            self.current += 1;
-        } else {
-            return Err(ParseError::UnexpectedToken("expected close bracket".into()));
-        }
+        };
+        self.consume_type(&TokenType::CloseBracket)?;
         while let Some(token) = self.tokens.get(self.current) {
             match token.r#type {
                 TokenType::Number(number) => {
@@ -174,7 +149,11 @@ impl Parser {
                 }
                 TokenType::NewLine => self.current += 1,
                 TokenType::DataLabel(_) => break,
-                _ => return Err(ParseError::UnexpectedToken("expected number".into())),
+                _ => {
+                    return Err(ParseError::UnexpectedToken(
+                        self.tokens[self.current].clone(),
+                    ));
+                }
             }
         }
         Ok(Value::Array(array))
@@ -210,7 +189,7 @@ impl Parser {
                 TokenType::DataLabel(_) => break,
                 _ => {
                     return Err(ParseError::UnexpectedToken(
-                        "expected number or data label".into(),
+                        self.tokens[self.current].clone(),
                     ))
                 }
             }
