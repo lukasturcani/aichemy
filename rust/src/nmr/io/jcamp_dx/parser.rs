@@ -64,7 +64,7 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
         .join("\n")
 }
 
-/// Parse JCAMP-DX files.
+/// Parse a JCAMP-DX file.
 ///
 /// This parser is based on the JCAMP-DX specification, defined
 /// [here](http://www.jcamp-dx.org/protocols/dxir01.pdf),
