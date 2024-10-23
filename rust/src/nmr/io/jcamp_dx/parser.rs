@@ -184,7 +184,7 @@ impl Parser {
         self.consume_type(&TokenType::Int(0))?;
         self.consume_type(&TokenType::DoubleDot)?;
 
-        match self.tokens.get(self.current + 2) {
+        match self.tokens.get(self.current + 3) {
             Some(token) => match &token.r#type {
                 TokenType::Number(_) => self.number_array(),
                 TokenType::String(_) => self.string_array(),
