@@ -1,6 +1,6 @@
-use std::{error::Error, fs, path::PathBuf};
+use std::{error, fs, path::PathBuf};
 
-use aichemy::nmr::io::jcamp_dx;
+use aichemy::nmr::io::{jcamp_dx, Error};
 use clap::Parser;
 
 #[derive(Parser)]
@@ -9,10 +9,13 @@ struct Cli {
     file: PathBuf,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn error::Error>> {
     let cli = Cli::parse();
     let content = fs::read(cli.file)?;
-    let records = jcamp_dx::parse(&content)?;
-    println!("{:#?}", records);
+    let records = jcamp_dx::parse(&content);
+    match records {
+        Ok(records) => println!("{:#?}", records),
+        Err(Error::Parse(error)) => println!("{}", error),
+    };
     Ok(())
 }

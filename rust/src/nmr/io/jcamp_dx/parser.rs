@@ -1,4 +1,4 @@
-use std::{collections::HashMap, mem};
+use std::{collections::HashMap, mem, str};
 
 use crate::nmr::io::Error;
 
@@ -17,10 +17,56 @@ enum ParseError {
     UnexpectedEndOfFile,
 }
 
+fn line(source: &[u8], line: usize) -> Result<Option<String>, str::Utf8Error> {
+    Ok(str::from_utf8(source)?
+        .lines()
+        .nth(line - 1)
+        .map(|line| line.into()))
+}
+
+fn error_token(token: &TokenType) -> String {
+    match token {
+        TokenType::DataLabel(label) => format!("data label: {}", label),
+        TokenType::String(string) => format!("string: {:?}", string),
+        TokenType::Number(number) => format!("number: {}", number),
+        TokenType::Int(number) => format!("integer: {}", number),
+        TokenType::BeginVariableList(list) => format!("variable list: {}", list),
+        TokenType::OpenBracket => "open bracket".into(),
+        TokenType::CloseBracket => "close bracket".into(),
+        TokenType::DoubleDot => "double dot".into(),
+        TokenType::NewLine => "new line".into(),
+    }
+}
+
+fn error_line(lines: &Option<Vec<&str>>, error: &ParseError) -> String {
+    match error {
+        ParseError::UnexpectedToken(token) => {
+            format!(
+                "unexpected token on line {}: [{}] {}",
+                token.line,
+                lines.as_ref().map_or("", |lines| lines[token.line - 1]),
+                error_token(&token.r#type)
+            )
+        }
+        ParseError::UnexpectedEndOfFile => "Unexpected end of file".into(),
+    }
+}
+
+fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
+    let lines = str::from_utf8(source)
+        .ok()
+        .map(|s| s.lines().collect::<Vec<_>>());
+    error
+        .iter()
+        .map(|error| error_line(&lines, error))
+        .collect::<Vec<String>>()
+        .join("\n")
+}
+
 pub fn parse(source: &[u8]) -> Result<HashMap<String, Value>, Error> {
     Parser::new(scan_tokens(source)?)
         .parse()
-        .map_err(|error| Error::Parse(format!("{:?}", error)))
+        .map_err(|error| Error::Parse(error_msg(source, error)))
 }
 
 /// A parser for JCAMP-DX files.
