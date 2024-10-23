@@ -103,9 +103,11 @@ impl Parser {
             }
             _ => Err(ParseError::UnexpectedToken("expected value".into())),
         };
-        if let Some(token) = self.tokens.get(self.current) {
+        while let Some(token) = self.tokens.get(self.current) {
             if token.r#type == TokenType::NewLine {
                 self.current += 1;
+            } else {
+                break;
             }
         }
         result
