@@ -12,6 +12,7 @@ pub enum TokenType {
     DataLabel(String),
     String(String),
     Number(f64),
+    Int(usize),
     BeginVariableList(String),
     OpenBracket,
     CloseBracket,
@@ -123,7 +124,7 @@ impl Scanner {
                 b'(' => {
                     if let Some(next) = source.get(self.current + 1) {
                         if next.is_ascii_digit() {
-                            self.handle_array(source);
+                            self.handle_array_prefix(source);
                         } else {
                             self.handle_string(source);
                         }
@@ -152,11 +153,14 @@ impl Scanner {
         }
     }
 
-    fn handle_array(&mut self, source: &[u8]) {
+    fn handle_array_prefix(&mut self, source: &[u8]) {
         while let Some(token) = source.get(self.current) {
             match token {
                 b'(' => self.add_token(TokenType::OpenBracket),
-                b')' => self.add_token(TokenType::CloseBracket),
+                b')' => {
+                    self.add_token(TokenType::CloseBracket);
+                    break;
+                }
                 b'.' => {
                     if self.r#match(source, b'.') {
                         self.add_token(TokenType::DoubleDot);
@@ -600,6 +604,83 @@ mod tests {
                 Token {
                     line: 2,
                     r#type: TokenType::BeginVariableList("(X++(Y..Y))".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::NewLine,
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(123.)
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(0.53)
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::Number(0.43)
+                },
+                Token {
+                    line: 3,
+                    r#type: TokenType::NewLine
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::Number(456.)
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::Number(0.32)
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::Number(0.22)
+                },
+                Token {
+                    line: 4,
+                    r#type: TokenType::NewLine
+                }
+            ]
+        );
+    }
+
+    #[test]
+    fn scan_array_data_set() {
+        let tokens = scan_tokens(
+            b"
+                ##label 1 =  (0..5)
+              123 0.53 0.43
+              456 0.32 0.22
+            ",
+        )
+        .unwrap();
+        assert_eq!(
+            tokens,
+            vec![
+                Token {
+                    line: 2,
+                    r#type: TokenType::DataLabel("LABEL1".into())
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::OpenBracket,
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::Int(0),
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::DoubleDot,
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::Int(5),
+                },
+                Token {
+                    line: 2,
+                    r#type: TokenType::CloseBracket,
                 },
                 Token {
                     line: 2,
