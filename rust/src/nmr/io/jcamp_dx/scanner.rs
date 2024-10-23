@@ -13,7 +13,9 @@ pub enum TokenType {
     String(String),
     Number(f64),
     BeginVariableList(String),
-    BeginArray,
+    OpenBracket,
+    CloseBracket,
+    DoubleDot,
     NewLine,
 }
 
@@ -23,6 +25,7 @@ enum ScanError {
     InvalidString { line: usize },
     ExpectedNumber { line: usize },
     UnterminatedString { line: usize },
+    ExpectedDot { line: usize },
 }
 
 struct Scanner {
@@ -126,29 +129,44 @@ impl Scanner {
                         }
                     }
                 }
-                _ if Scanner::is_number_start(char) => {
-                    while let Some(next) = source.get(self.current + 1) {
-                        if next.is_ascii_whitespace() {
-                            break;
-                        }
-                        self.current += 1;
-                    }
-                    match str::from_utf8(&source[self.start..self.current + 1]) {
-                        Ok(string) => match string.parse::<f64>() {
-                            Ok(number) => self.add_token(TokenType::Number(number)),
-                            Err(_) => self.add_error(ScanError::ExpectedNumber { line: self.line }),
-                        },
-                        Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
-                    }
-                }
+                _ if Scanner::is_number_start(char) => self.handle_number(source),
                 _ if char.is_ascii_graphic() => self.handle_string(source),
                 _ => self.advance(),
             }
         }
     }
 
+    fn handle_number(&mut self, source: &[u8]) {
+        while let Some(next) = source.get(self.current + 1) {
+            if next.is_ascii_whitespace() {
+                break;
+            }
+            self.current += 1;
+        }
+        match str::from_utf8(&source[self.start..self.current + 1]) {
+            Ok(string) => match string.parse::<f64>() {
+                Ok(number) => self.add_token(TokenType::Number(number)),
+                Err(_) => self.add_error(ScanError::ExpectedNumber { line: self.line }),
+            },
+            Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
+        }
+    }
+
     fn handle_array(&mut self, source: &[u8]) {
-        todo!()
+        while let Some(token) = source.get(self.current) {
+            match token {
+                b'(' => self.add_token(TokenType::OpenBracket),
+                b')' => self.add_token(TokenType::CloseBracket),
+                b'.' => {
+                    if self.r#match(source, b'.') {
+                        self.add_token(TokenType::DoubleDot);
+                    } else {
+                        self.add_error(ScanError::ExpectedDot { line: self.line });
+                    }
+                }
+                _ => self.handle_number(source),
+            }
+        }
     }
 
     fn handle_string(&mut self, source: &[u8]) {
