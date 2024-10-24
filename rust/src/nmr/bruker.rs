@@ -3,12 +3,14 @@
 //! # Examples
 //! ```no_run
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! use aichemy::nmr::bruker{self, Procs};
+//! use aichemy::nmr::bruker::{self, Procs};
 //! use aichemy::nmr::io::jcamp_dx;
 //! use std::fs;
 //! let procs = Procs(jcamp_dx::parse(fs::read("procs")?)?);
-//! let spectrum = bruker::read_binary(fs::read("1r")?, procs.data_type()?, procs.endianness()?)?;
-//! bruker::scale(&mut spectrum, procs.scale()?)
+//! let mut spectrum = bruker::read_binary(fs::read("1r")?, procs.data_type()?, procs.endianness()?)?;
+//! bruker::scale(&mut spectrum, procs.scale()?);
+//! # Ok(())
+//! # }
 //! ```
 
 use std::collections::HashMap;
