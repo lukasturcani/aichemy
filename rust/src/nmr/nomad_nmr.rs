@@ -260,7 +260,7 @@ impl Client {
     ///
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let mut client: aichemy::nmr::nomad_nmr::Client = todo!();
+    /// # let mut client: aichemy::nmr::nomad_nmr::Client = unreachable!();
     /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
     /// let auto_experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;
     /// # Ok(())
@@ -271,7 +271,7 @@ impl Client {
     ///
     /// ```no_run
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let mut client: aichemy::nmr::nomad_nmr::Client = todo!();
+    /// # let mut client: aichemy::nmr::nomad_nmr::Client = unreachable!();
     /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
     /// let auto_experiments = client.auto_experiments(&AutoExperimentQuery {
     ///     solvent: vec!["CDCl3"],
@@ -551,7 +551,7 @@ pub struct AutoExperiment {
 /// # Examples
 /// ```no_run
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// # let mut client: aichemy::nmr::nomad_nmr::Client = todo!();
+/// # let mut client: aichemy::nmr::nomad_nmr::Client = unreachable!();
 /// use std::fs;
 /// use aichemy::nmr::nomad_nmr::AutoExperimentQuery;
 /// let auto_experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;

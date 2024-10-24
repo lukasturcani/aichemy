@@ -82,28 +82,6 @@ pub fn scale(data: &mut [f64], scale: f64) {
     }
 }
 
-// fn read_2d_spectrum(binary: impl AsRef<Path>, procs: impl AsRef<Path>, acqus: impl AsRef<Path>) {
-//     // let si = procs
-//     //     .get("$SI")
-//     //     .ok_or(Error::NmrError {
-//     //         message: format!("$SI variable missing from {procs:?}"),
-//     //     })?
-//     //     .as_integer()
-//     //     .ok_or(Error::NmrError {
-//     //         message: format!("$SI variable is not an integer in {procs:?}"),
-//     //     })?;
-//     // let xdim = procs
-//     //     .get("$XDIM")
-//     //     .ok_or(Error::NmrError {
-//     //         message: format!("$XDIM variable missing from {procs:?}"),
-//     //     })?
-//     //     .as_integer()
-//     //     .ok_or(Error::NmrError {
-//     //         message: format!("$XDIM variable is not an integer in {procs:?}"),
-//     //     })?;
-//     todo!();
-// }
-
 /// A wrapper for `procs` files.
 ///
 /// `procs` files are simple key-value files but some keys contain semantic
