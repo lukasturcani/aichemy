@@ -65,33 +65,33 @@ fn test_parse() {
         }
     );
     assert_eq!(items["TITLE"], Value::String("diff".into()));
-    assert_eq!(items["JCAMPDX"], Value::Number(5.0));
+    assert_eq!(items["JCAMPDX"], Value::Float(5.0));
     assert_eq!(items["DATATYPE"], Value::String("NMR Spectrum".into()));
-    assert_eq!(items[".OBSERVEFREQUENCY"], Value::Number(100.4));
+    assert_eq!(items[".OBSERVEFREQUENCY"], Value::Float(100.4));
     assert_eq!(items[".OBSERVENUCLEUS"], Value::String("^13C".into()));
     assert_eq!(
         items["SPECTROMETERDATASYSTEM"],
         Value::String("JEOL GX 400".into())
     );
-    assert_eq!(items["$AQMOD"], Value::Number(1.));
+    assert_eq!(items["$AQMOD"], Value::Float(1.));
     assert_eq!(items["$AUNM"], Value::String("au_zgsino".into()));
-    assert_eq!(items["$BF1"], Value::Number(100.4));
+    assert_eq!(items["$BF1"], Value::Float(100.4));
     assert_eq!(items["$CPDPRGB"], Value::String("waltz16".into()));
-    assert_eq!(items["$D"], Value::NumberArray(vec![0., 1., 2., 3.]));
+    assert_eq!(items["$D"], Value::FloatArray(vec![0., 1., 2., 3.]));
     assert_eq!(items["$DBPNAM0"], Value::String("".into()));
     assert_eq!(items["$DECNUC"], Value::String("1H".into()));
     assert_eq!(
         items["$IN"],
-        Value::NumberArray(vec![0.001, 0.002, 0.003, 0.004, 0.005])
+        Value::FloatArray(vec![0.001, 0.002, 0.003, 0.004, 0.005])
     );
     assert_eq!(
         items["$SUBNAM"],
         Value::StringArray(vec!["foo".into(), "bar".into(), "".into(), "bam".into()])
     );
-    assert_eq!(items["MINY"], Value::Number(-27593530.));
+    assert_eq!(items["MINY"], Value::Float(-27593530.));
     assert_eq!(
         items["XYDATA"],
-        Value::NumberArray(vec![
+        Value::FloatArray(vec![
             2259260., -5242968., -7176216., -1616072., 3754660., -142736., -85762., -2471282.
         ])
     );

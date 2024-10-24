@@ -23,4 +23,10 @@ pub enum Error {
     /// A NOMAD NMR error.
     #[error("NOMAD NMR error")]
     NomadNmrError(#[from] nmr::nomad_nmr::Error),
+    /// An error with an NMR spectrum.
+    #[error("{message}")]
+    NmrError {
+        /// Message describing the error.
+        message: String,
+    },
 }

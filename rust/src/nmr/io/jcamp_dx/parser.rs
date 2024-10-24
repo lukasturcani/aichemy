@@ -11,12 +11,50 @@ use super::scanner::{scan_tokens, Token, TokenType};
 pub enum Value {
     /// A string.
     String(String),
-    /// A number.
-    Number(f64),
+    /// A float.
+    Float(f64),
     /// An array of numbers.
-    NumberArray(Vec<f64>),
+    FloatArray(Vec<f64>),
     /// An array of strings.
     StringArray(Vec<String>),
+}
+
+impl Value {
+    /// If the value is a string, return it as a reference. Returns Non otherwise.
+    pub fn as_string(&self) -> Option<&str> {
+        if let Value::String(string) = self {
+            Some(string.as_str())
+        } else {
+            None
+        }
+    }
+
+    /// If the value is a float, return its value. Returns None otherwise.
+    pub fn as_float(&self) -> Option<f64> {
+        if let Value::Float(number) = self {
+            Some(*number)
+        } else {
+            None
+        }
+    }
+
+    /// If the value is an array of floats, return it as a reference. Returns None otherwise.
+    pub fn as_float_array(&self) -> Option<&[f64]> {
+        if let Value::FloatArray(array) = self {
+            Some(array.as_slice())
+        } else {
+            None
+        }
+    }
+
+    /// If the value is an array of strings, return it as a reference. Returns None otherwise.
+    pub fn as_string_array(&self) -> Option<&[String]> {
+        if let Value::StringArray(array) = self {
+            Some(array.as_slice())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -192,12 +230,12 @@ impl Parser {
             }
             &TokenType::Number(number) => {
                 self.current += 1;
-                Ok(Value::Number(number))
+                Ok(Value::Float(number))
             }
             TokenType::BeginVariableList(_) => {
                 self.current += 1;
                 self.consume_newlines();
-                Ok(Value::NumberArray(self.variable_list()?))
+                Ok(Value::FloatArray(self.variable_list()?))
             }
             TokenType::OpenBracket => self.array(),
             _ => Err(ParseError::UnexpectedToken(
@@ -256,7 +294,7 @@ impl Parser {
                 }
             }
         }
-        Ok(Value::NumberArray(array))
+        Ok(Value::FloatArray(array))
     }
 
     fn string_array(&mut self) -> Result<Value, ParseError> {
