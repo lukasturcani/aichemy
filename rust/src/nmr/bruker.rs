@@ -2,7 +2,9 @@
 
 use std::{fs, path::Path};
 
-use super::io::{jcamp_dx, Error};
+use crate::Error;
+
+use super::io::jcamp_dx;
 
 enum DataType {
     Float64,
@@ -19,7 +21,11 @@ fn read_bruker_binary_file(
     dtype: DataType,
     endianness: Endianness,
 ) -> Result<Vec<f64>, Error> {
-    let array = fs::read(path).map_err(|source| Error::Read { source })?;
+    let path = path.as_ref();
+    let array = fs::read(path).map_err(|source| Error::Io {
+        message: format!("failed to read {path:?}"),
+        source: Some(source.into()),
+    })?;
     match (dtype, endianness) {
         (DataType::Float64, Endianness::Little) => Ok(array
             .chunks_exact(8)

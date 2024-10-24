@@ -2,7 +2,7 @@ use std::{collections::HashMap, mem, str};
 
 use serde::{Deserialize, Serialize};
 
-use crate::nmr::io::Error;
+use crate::Error;
 
 use super::scanner::{scan_tokens, Token, TokenType};
 
@@ -112,7 +112,10 @@ pub fn parse(source: impl AsRef<[u8]>) -> Result<HashMap<String, Value>, Error> 
     let source = source.as_ref();
     Parser::new(scan_tokens(source)?)
         .parse()
-        .map_err(|error| Error::Parse(error_msg(source, error)))
+        .map_err(|error| Error::Io {
+            message: error_msg(source, error),
+            source: None,
+        })
 }
 
 #[derive(Clone, Debug, Default)]

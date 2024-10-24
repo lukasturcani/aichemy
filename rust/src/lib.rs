@@ -13,12 +13,12 @@ pub mod nmr;
 #[derive(Error, Debug)]
 pub enum Error {
     /// Error reading or writing a file.
-    #[error("io failed: {message}")]
+    #[error("{message}")]
     Io {
         /// Message describing the error.
         message: String,
         /// The underlying error.
-        source: anyhow::Error,
+        source: Option<anyhow::Error>,
     },
     /// A NOMAD NMR error.
     #[error("NOMAD NMR error")]

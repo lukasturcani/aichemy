@@ -15,8 +15,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
     let records = jcamp_dx::parse(&content);
     match records {
         Ok(records) => println!("{:#?}", records),
-        Err(Error::Parse(error)) => println!("{}", error),
-        other => println!("{:?}", other),
+        Err(error) => println!("{}", error),
     };
     Ok(())
 }

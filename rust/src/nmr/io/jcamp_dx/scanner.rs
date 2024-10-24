@@ -1,5 +1,6 @@
-use super::Error;
 use std::str;
+
+use crate::Error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -90,7 +91,10 @@ impl Scanner {
             }
         }
         if !self.errors.is_empty() {
-            Err(Error::Parse(format!("{:?}", self.errors)))
+            Err(Error::Io {
+                message: format!("{:?}", self.errors),
+                source: None,
+            })
         } else {
             Ok(self.tokens)
         }
