@@ -40,17 +40,17 @@ fn read_bruker_binary_file(
     }
 }
 
-fn read_1d_spectrum(
-    binary: impl AsRef<Path>,
-    procs: impl AsRef<Path>,
-    acqus: impl AsRef<Path>,
-) -> Result<(), Error> {
-    let procs = jcamp_dx::parse(fs::read(procs).map_err(|source| Error::Read { source })?)?;
-    let acqus = jcamp_dx::parse(fs::read(acqus).map_err(|source| Error::Read { source })?)?;
-    let si = procs["$SI"];
-    let xdim = procs["$XDIM"];
-    let endianness = procs
-        .get("$BYTEORD")
-        .map_or(Endianness::Little, |byte_order| {});
-    Ok(())
-}
+// fn read_1d_spectrum(
+//     binary: impl AsRef<Path>,
+//     procs: impl AsRef<Path>,
+//     acqus: impl AsRef<Path>,
+// ) -> Result<(), Error> {
+//     let procs = jcamp_dx::parse(fs::read(procs).map_err(|source| Error::Read { source })?)?;
+//     let acqus = jcamp_dx::parse(fs::read(acqus).map_err(|source| Error::Read { source })?)?;
+//     let si = procs["$SI"];
+//     let xdim = procs["$XDIM"];
+//     let endianness = procs
+//         .get("$BYTEORD")
+//         .map_or(Endianness::Little, |byte_order| {});
+//     Ok(())
+// }
