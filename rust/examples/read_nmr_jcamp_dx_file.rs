@@ -19,10 +19,7 @@ fn main() {
 fn run() -> Result<(), Box<dyn error::Error>> {
     let cli = Cli::parse();
     let content = fs::read(cli.file)?;
-    let records = jcamp_dx::parse(&content);
-    match records {
-        Ok(records) => println!("{:#?}", records),
-        Err(error) => println!("{}", error),
-    };
+    let records = jcamp_dx::parse(&content)?;
+    println!("{:#?}", records);
     Ok(())
 }
