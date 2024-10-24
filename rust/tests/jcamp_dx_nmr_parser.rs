@@ -73,7 +73,7 @@ fn test_parse() {
         items["SPECTROMETERDATASYSTEM"],
         Value::String("JEOL GX 400".into())
     );
-    assert_eq!(items["$AQMOD"], Value::Float(1.));
+    assert_eq!(items["$AQMOD"], Value::Integer(1));
     assert_eq!(items["$AUNM"], Value::String("au_zgsino".into()));
     assert_eq!(items["$BF1"], Value::Float(100.4));
     assert_eq!(items["$CPDPRGB"], Value::String("waltz16".into()));
