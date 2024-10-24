@@ -88,7 +88,7 @@ fn test_parse() {
         items["$SUBNAM"],
         Value::StringArray(vec!["foo".into(), "bar".into(), "".into(), "bam".into()])
     );
-    assert_eq!(items["MINY"], Value::Float(-27593530.));
+    assert_eq!(items["MINY"], Value::Integer(-27593530));
     assert_eq!(
         items["XYDATA"],
         Value::FloatArray(vec![
