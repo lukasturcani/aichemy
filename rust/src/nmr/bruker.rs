@@ -6,10 +6,14 @@
 //! use aichemy::nmr::bruker::{self, Procs};
 //! use aichemy::nmr::io::jcamp_dx;
 //! use std::fs;
+//! use find_peaks::PeakFinder;
 //! let procs = Procs(jcamp_dx::parse(fs::read("procs")?)?);
 //! let mut spectrum =
 //!     bruker::read_binary(fs::read("1r")?, procs.data_type()?, procs.endianness()?)?;
 //! bruker::scale(&mut spectrum, procs.scale()?);
+//! let peaks = PeakFinder::new(&spectrum)
+//!     .with_min_prominence(1e4)
+//!     .find_peaks();
 //! # Ok(())
 //! # }
 //! ```
@@ -71,10 +75,10 @@ pub fn read_binary(
 
 /// Scale the values in a spectrum.
 ///
-/// Divides each value in the spectrum by the provided scale factor.
+/// Multiplies each value in the spectrum by the provided scale factor.
 pub fn scale(data: &mut [f64], scale: f64) {
     for value in data {
-        *value /= scale;
+        *value *= scale;
     }
 }
 
