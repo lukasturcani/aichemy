@@ -18,7 +18,14 @@ struct Cli {
     download_path: PathBuf,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
+    if let Err(error) = run() {
+        eprintln!("{}", error);
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
     let client = Client::login(cli.url, cli.username, cli.password)?;
     let experiments = client.auto_experiments(&AutoExperimentQuery::empty())?;

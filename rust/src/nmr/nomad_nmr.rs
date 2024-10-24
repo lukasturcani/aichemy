@@ -44,16 +44,16 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Error {
     /// Failed to authenticate with the NOMAD server.
-    #[error("Failed to authenticate with NOMAD NMR server: {0}")]
+    #[error("failed to authenticate with NOMAD NMR server: {0}")]
     Auth(String),
     /// Failed to parse the URL.
-    #[error("Failed to parse url: {source}")]
+    #[error("failed to parse url")]
     InvalidUrl {
         /// The underlying error.
         source: reqwest::Error,
     },
     /// Request failed.
-    #[error("Request failed: {source}")]
+    #[error("{source}")]
     Request {
         /// The underlying error.
         source: reqwest::Error,

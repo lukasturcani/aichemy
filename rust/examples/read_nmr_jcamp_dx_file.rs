@@ -1,6 +1,6 @@
 use std::{error, fs, path::PathBuf};
 
-use aichemy::nmr::io::{jcamp_dx, Error};
+use aichemy::nmr::io::jcamp_dx;
 use clap::Parser;
 
 #[derive(Parser)]
