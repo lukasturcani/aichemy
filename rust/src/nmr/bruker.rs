@@ -11,7 +11,7 @@
 //! bruker::scale(&mut spectrum, procs.scale()?)
 //! ```
 
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
@@ -19,15 +19,21 @@ use crate::Error;
 
 use super::io::jcamp_dx::Value;
 
+/// The data type of the values in the spectrum binary file.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum DataType {
+    /// 64-bit floating point values.
     Float64,
+    /// 32-bit integer values.
     Integer32,
 }
 
+/// The endianness of the values in the spectrum binary file.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Endianness {
+    /// Little endian.
     Little,
+    /// Big endian.
     Big,
 }
 
@@ -60,33 +66,36 @@ pub fn read_binary(
     }
 }
 
+/// Scale the values in a spectrum.
+///
+/// Divides each value in the spectrum by the provided scale factor.
 pub fn scale(data: &mut [f64], scale: f64) {
     for value in data {
         *value /= scale;
     }
 }
 
-fn read_2d_spectrum(binary: impl AsRef<Path>, procs: impl AsRef<Path>, acqus: impl AsRef<Path>) {
-    // let si = procs
-    //     .get("$SI")
-    //     .ok_or(Error::NmrError {
-    //         message: format!("$SI variable missing from {procs:?}"),
-    //     })?
-    //     .as_integer()
-    //     .ok_or(Error::NmrError {
-    //         message: format!("$SI variable is not an integer in {procs:?}"),
-    //     })?;
-    // let xdim = procs
-    //     .get("$XDIM")
-    //     .ok_or(Error::NmrError {
-    //         message: format!("$XDIM variable missing from {procs:?}"),
-    //     })?
-    //     .as_integer()
-    //     .ok_or(Error::NmrError {
-    //         message: format!("$XDIM variable is not an integer in {procs:?}"),
-    //     })?;
-    todo!();
-}
+// fn read_2d_spectrum(binary: impl AsRef<Path>, procs: impl AsRef<Path>, acqus: impl AsRef<Path>) {
+//     // let si = procs
+//     //     .get("$SI")
+//     //     .ok_or(Error::NmrError {
+//     //         message: format!("$SI variable missing from {procs:?}"),
+//     //     })?
+//     //     .as_integer()
+//     //     .ok_or(Error::NmrError {
+//     //         message: format!("$SI variable is not an integer in {procs:?}"),
+//     //     })?;
+//     // let xdim = procs
+//     //     .get("$XDIM")
+//     //     .ok_or(Error::NmrError {
+//     //         message: format!("$XDIM variable missing from {procs:?}"),
+//     //     })?
+//     //     .as_integer()
+//     //     .ok_or(Error::NmrError {
+//     //         message: format!("$XDIM variable is not an integer in {procs:?}"),
+//     //     })?;
+//     todo!();
+// }
 
 /// A wrapper for `procs` files.
 ///
