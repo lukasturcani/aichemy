@@ -16,7 +16,7 @@ pub enum Endianness {
     Big,
 }
 
-/// Interpret the content of a Bruker binary file.
+/// Interpret the content of a Bruker binary file spectrum.
 ///
 /// # Examples
 /// ```no_run
