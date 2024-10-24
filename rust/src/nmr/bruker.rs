@@ -1,4 +1,15 @@
 //! Tools to interact with Bruker data.
+//!
+//! # Examples
+//! ```no_run
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use aichemy::nmr::bruker{self, Procs};
+//! use aichemy::nmr::io::jcamp_dx;
+//! use std::fs;
+//! let procs = Procs(jcamp_dx::parse(fs::read("procs")?)?);
+//! let spectrum = bruker::read_binary(fs::read("1r")?, procs.data_type()?, procs.endianness()?)?;
+//! bruker::scale(&mut spectrum, procs.scale()?)
+//! ```
 
 use std::{collections::HashMap, path::Path};
 
@@ -8,11 +19,13 @@ use crate::Error;
 
 use super::io::jcamp_dx::Value;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum DataType {
     Float64,
     Integer32,
 }
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum Endianness {
     Little,
     Big,
@@ -21,14 +34,7 @@ pub enum Endianness {
 /// Interpret the content of a Bruker binary file spectrum.
 ///
 /// # Examples
-/// ```no_run
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use aichemy::nmr::bruker{self, Procs};
-/// use aichemy::nmr::io::jcamp_dx;
-/// use std::fs;
-/// let procs = Procs(jcamp_dx::parse(fs::read("procs")?)?);
-/// let spectrum = bruker::read_binary(fs::read("1r")?, procs.data_type()?, procs.endianness()?)?;
-/// ```
+/// See [here](self#examples).
 pub fn read_binary(
     array: Vec<u8>,
     data_type: DataType,
@@ -54,7 +60,11 @@ pub fn read_binary(
     }
 }
 
-pub fn scale_data(data: &mut [f64], scale: f64) {}
+pub fn scale(data: &mut [f64], scale: f64) {
+    for value in data {
+        *value /= scale;
+    }
+}
 
 fn read_2d_spectrum(binary: impl AsRef<Path>, procs: impl AsRef<Path>, acqus: impl AsRef<Path>) {
     // let si = procs
@@ -87,12 +97,12 @@ fn read_2d_spectrum(binary: impl AsRef<Path>, procs: impl AsRef<Path>, acqus: im
 ///
 /// # Examples
 ///
-/// See [`read_binary`].
+/// See [here](self#examples).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Procs(pub HashMap<String, Value>);
 
 impl Procs {
-    /// Return the endianness of values in the spectrum binary file.
+    /// Return the endianness of the values in the spectrum binary file.
     pub fn endianness(&self) -> Result<Endianness, Error> {
         match self.0.get("$BYTEORD") {
             None => Ok(Endianness::Little),
@@ -109,7 +119,7 @@ impl Procs {
         }
     }
 
-    /// Return the data type of values in the spectrum binary file.
+    /// Return the data type of the values in the spectrum binary file.
     pub fn data_type(&self) -> Result<DataType, Error> {
         let dtype = self.0.get("$DTYPP");
         Ok(match dtype {
