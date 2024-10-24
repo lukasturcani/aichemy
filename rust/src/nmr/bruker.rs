@@ -46,6 +46,10 @@ fn read_bruker_binary_file(
     }
 }
 
+fn scale_data(data: &mut [f64]) {
+    todo!()
+}
+
 fn read_1d_spectrum(
     binary: impl AsRef<Path>,
     procs: impl AsRef<Path>,
@@ -67,14 +71,47 @@ fn read_1d_spectrum(
         .ok_or(Error::NmrError {
             message: format!("$SI variable missing from {procs:?}"),
         })?
-        .as_float()
+        .as_integer()
         .ok_or(Error::NmrError {
-            message: format!("$SI variable is not a float in {procs:?}"),
+            message: format!("$SI variable is not an integer in {procs:?}"),
         })?;
-    // let xdim = procs["$XDIM"];
-    todo!();
-    // let endianness = procs
-    //     .get("$BYTEORD")
-    //     .map_or(Endianness::Little, |byte_order| {});
+    let xdim = procs
+        .get("$XDIM")
+        .ok_or(Error::NmrError {
+            message: format!("$XDIM variable missing from {procs:?}"),
+        })?
+        .as_integer()
+        .ok_or(Error::NmrError {
+            message: format!("$XDIM variable is not an integer in {procs:?}"),
+        })?;
+
+    let endianness = match procs.get("$BYTEORD") {
+        None => Endianness::Little,
+        Some(byte_order) => {
+            let byte_order = byte_order.as_integer().ok_or(Error::NmrError {
+                message: format!("$BYTEORD variable is not an integer in {procs:?}"),
+            })?;
+            if byte_order == 1 {
+                Endianness::Big
+            } else {
+                Endianness::Little
+            }
+        }
+    };
+    let data_type = match procs.get("$DTYPP") {
+        None => DataType::Integer32,
+        Some(dtype) => {
+            let dtype = dtype.as_integer().ok_or(Error::NmrError {
+                message: format!("$DTYPP variable is not an integer in {procs:?}"),
+            })?;
+            if dtype == 2 {
+                DataType::Float64
+            } else {
+                DataType::Integer32
+            }
+        }
+    };
+    let mut data = read_bruker_binary_file(binary, data_type, endianness)?;
+    scale_data(&mut data);
     Ok(())
 }
