@@ -13,7 +13,7 @@ pub enum TokenType {
     DataLabel(String),
     String(String),
     Number(f64),
-    Int(usize),
+    Int(i64),
     BeginVariableList(String),
     OpenBracket,
     CloseBracket,
@@ -150,9 +150,12 @@ impl Scanner {
             self.current += 1;
         }
         match str::from_utf8(&source[self.start..self.current + 1]) {
-            Ok(string) => match string.parse::<f64>() {
-                Ok(number) => self.add_token(TokenType::Number(number)),
-                Err(_) => self.add_error(ScanError::ExpectedNumber { line: self.line }),
+            Ok(string) => match string.parse::<i64>() {
+                Ok(number) => self.add_token(TokenType::Int(number)),
+                Err(_) => match string.parse::<f64>() {
+                    Ok(number) => self.add_token(TokenType::Number(number)),
+                    Err(_) => self.add_error(ScanError::ExpectedNumber { line: self.line }),
+                },
             },
             Err(_) => self.add_error(ScanError::InvalidString { line: self.line }),
         }
@@ -166,7 +169,7 @@ impl Scanner {
             self.current += 1;
         }
         match str::from_utf8(&source[self.start..self.current + 1]) {
-            Ok(string) => match string.parse::<usize>() {
+            Ok(string) => match string.parse::<i64>() {
                 Ok(number) => self.add_token(TokenType::Int(number)),
                 Err(_) => self.add_error(ScanError::ExpectedInt { line: self.line }),
             },

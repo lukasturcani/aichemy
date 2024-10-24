@@ -243,6 +243,10 @@ impl Parser {
                 self.current += 1;
                 Ok(Value::Float(number))
             }
+            &TokenType::Int(number) => {
+                self.current += 1;
+                Ok(Value::Integer(number))
+            }
             TokenType::BeginVariableList(_) => {
                 self.current += 1;
                 self.consume_newlines();
@@ -287,7 +291,7 @@ impl Parser {
     fn number_array(&mut self) -> Result<Value, ParseError> {
         let mut array = Vec::new();
         if let TokenType::Int(max_index) = self.consume_type(&TokenType::Int(0))?.r#type {
-            array.reserve(max_index + 1);
+            array.reserve(max_index as usize + 1);
         };
         self.consume_type(&TokenType::CloseBracket)?;
         while let Some(token) = self.tokens.get(self.current) {
@@ -311,7 +315,7 @@ impl Parser {
     fn string_array(&mut self) -> Result<Value, ParseError> {
         let mut array = Vec::new();
         if let TokenType::Int(max_index) = self.consume_type(&TokenType::Int(0))?.r#type {
-            array.reserve(max_index + 1);
+            array.reserve(max_index as usize + 1);
         };
         self.consume_type(&TokenType::CloseBracket)?;
         while let Some(token) = self.tokens.get(self.current) {
@@ -351,7 +355,11 @@ impl Parser {
                     self.current += 1;
                     array.push(number);
                 }
-                TokenType::Number(_) => {
+                TokenType::Int(number) if take_number => {
+                    self.current += 1;
+                    array.push(number as f64);
+                }
+                TokenType::Number(_) | TokenType::Int(_) => {
                     self.current += 1;
                     take_number = true;
                 }
