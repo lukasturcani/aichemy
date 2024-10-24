@@ -11,6 +11,8 @@ use super::scanner::{scan_tokens, Token, TokenType};
 pub enum Value {
     /// A string.
     String(String),
+    /// An integer.
+    Integer(i64),
     /// A float.
     Float(f64),
     /// An array of numbers.
@@ -32,6 +34,15 @@ impl Value {
     /// If the value is a float, return its value. Returns None otherwise.
     pub fn as_float(&self) -> Option<f64> {
         if let Value::Float(number) = self {
+            Some(*number)
+        } else {
+            None
+        }
+    }
+
+    /// If the value is an integer, return its value. Returns None otherwise.
+    pub fn as_integer(&self) -> Option<i64> {
+        if let Value::Integer(number) = self {
             Some(*number)
         } else {
             None
