@@ -1,6 +1,8 @@
 //! Tools to interact with Bruker data.
 
-use std::{collections::HashMap, fs, path::Path};
+use std::{collections::HashMap, path::Path};
+
+use serde::{Deserialize, Serialize};
 
 use crate::Error;
 
@@ -52,9 +54,7 @@ pub fn read_binary(
     }
 }
 
-fn scale_data(data: &mut [f64]) {
-    todo!()
-}
+pub fn scale_data(data: &mut [f64], scale: f64) {}
 
 fn read_2d_spectrum(binary: impl AsRef<Path>, procs: impl AsRef<Path>, acqus: impl AsRef<Path>) {
     // let si = procs
@@ -78,9 +78,21 @@ fn read_2d_spectrum(binary: impl AsRef<Path>, procs: impl AsRef<Path>, acqus: im
     todo!();
 }
 
+/// A wrapper for `procs` files.
+///
+/// `procs` files are simple key-value files but some keys contain semantic
+/// information that can be used to interpret the spectrum. This wrapper makes it
+/// eassy to access this information. Typically, this structure will be used along
+/// with functions like [`read_binary`].
+///
+/// # Examples
+///
+/// See [`read_binary`].
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Procs(pub HashMap<String, Value>);
 
 impl Procs {
+    /// Return the endianness of values in the spectrum binary file.
     pub fn endianness(&self) -> Result<Endianness, Error> {
         match self.0.get("$BYTEORD") {
             None => Ok(Endianness::Little),
@@ -97,6 +109,7 @@ impl Procs {
         }
     }
 
+    /// Return the data type of values in the spectrum binary file.
     pub fn data_type(&self) -> Result<DataType, Error> {
         let dtype = self.0.get("$DTYPP");
         Ok(match dtype {
@@ -112,5 +125,24 @@ impl Procs {
                 }
             }
         })
+    }
+
+    /// Return the scaling factor for the values in the spectrum binary file.
+    pub fn scale(&self) -> Result<f64, Error> {
+        match self.0.get("$NCPROC") {
+            None => Ok(1.0),
+            Some(value) => {
+                let value = match value {
+                    Value::Float(value) => *value,
+                    Value::Integer(value) => *value as f64,
+                    _ => {
+                        return Err(Error::NmrError {
+                            message: format!("$NCPROC variable is not a number: {value:?}"),
+                        })
+                    }
+                };
+                Ok(2.0_f64.powf(value))
+            }
+        }
     }
 }
