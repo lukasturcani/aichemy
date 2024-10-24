@@ -149,8 +149,8 @@ fn error_msg(source: &[u8], error: Vec<ParseError>) -> String {
 ///     ###END=",
 /// )?;
 /// assert_eq!(items["TITLE"], Value::String("diff".into()));
-/// assert_eq!(items["JCAMPDX"], Value::Number(5.0));
-/// assert_eq!(items[".OBSERVEFREQUENCY"], Value::Number(100.4));
+/// assert_eq!(items["JCAMPDX"], Value::Float(5.0));
+/// assert_eq!(items[".OBSERVEFREQUENCY"], Value::Float(100.4));
 /// assert_eq!(items["$SUBNAM"], Value::StringArray(vec![
 ///     "foo".into(), "bar".into(), "".into(), "bam".into()
 /// ]));
@@ -280,7 +280,7 @@ impl Parser {
 
         match self.tokens.get(self.current + 3) {
             Some(token) => match &token.r#type {
-                TokenType::Number(_) => self.number_array(),
+                TokenType::Number(_) | TokenType::Int(_) => self.number_array(),
                 TokenType::String(_) => self.string_array(),
                 _ => Err(ParseError::UnexpectedToken(token.clone())),
             },
@@ -298,6 +298,10 @@ impl Parser {
             match token.r#type {
                 TokenType::Number(number) => {
                     array.push(number);
+                    self.current += 1;
+                }
+                TokenType::Int(number) => {
+                    array.push(number as f64);
                     self.current += 1;
                 }
                 TokenType::NewLine => self.current += 1,
