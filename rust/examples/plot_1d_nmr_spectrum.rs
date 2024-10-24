@@ -1,6 +1,8 @@
 use aichemy::nmr::bruker::{self, Procs};
 use aichemy::nmr::io::jcamp_dx;
 use clap::Parser;
+use plotly::common::Mode;
+use plotly::{Layout, Plot, Scatter};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -21,8 +23,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let procs = read_procs(&cli.nmr_directory)?;
     let data = read_spectrum(&cli.nmr_directory)?;
-    let mut spectrum = bruker::read_binary(data, procs.data_type()?, procs.endianness()?)?;
-    bruker::scale(&mut spectrum, procs.scale()?);
+    let spectrum = bruker::read_binary(data, procs.data_type()?, procs.endianness()?)?;
+    let xs = (0..spectrum.len()).collect();
+    let trace = Scatter::new(xs, spectrum)
+        .name("spectrum")
+        .mode(Mode::Lines);
+    let mut plot = Plot::new();
+    plot.add_trace(trace);
+    let layout = Layout::new().title(format!("NMR Spectrum {}", cli.nmr_directory.display()));
+    plot.set_layout(layout);
+    plot.show();
     Ok(())
 }
 
