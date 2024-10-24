@@ -580,7 +580,7 @@ mod tests {
                 },
                 Token {
                     line: 4,
-                    r#type: TokenType::Number(42.),
+                    r#type: TokenType::Int(42),
                 },
                 Token {
                     line: 4,
@@ -629,7 +629,7 @@ mod tests {
                 },
                 Token {
                     line: 3,
-                    r#type: TokenType::Number(123.)
+                    r#type: TokenType::Int(123)
                 },
                 Token {
                     line: 3,
@@ -645,7 +645,7 @@ mod tests {
                 },
                 Token {
                     line: 4,
-                    r#type: TokenType::Number(456.)
+                    r#type: TokenType::Int(456)
                 },
                 Token {
                     line: 4,
@@ -706,7 +706,7 @@ mod tests {
                 },
                 Token {
                     line: 3,
-                    r#type: TokenType::Number(123.)
+                    r#type: TokenType::Int(123)
                 },
                 Token {
                     line: 3,
@@ -722,7 +722,7 @@ mod tests {
                 },
                 Token {
                     line: 4,
-                    r#type: TokenType::Number(456.)
+                    r#type: TokenType::Int(456)
                 },
                 Token {
                     line: 4,
