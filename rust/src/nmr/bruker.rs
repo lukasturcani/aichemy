@@ -7,7 +7,8 @@
 //! use aichemy::nmr::io::jcamp_dx;
 //! use std::fs;
 //! let procs = Procs(jcamp_dx::parse(fs::read("procs")?)?);
-//! let mut spectrum = bruker::read_binary(fs::read("1r")?, procs.data_type()?, procs.endianness()?)?;
+//! let mut spectrum =
+//!     bruker::read_binary(fs::read("1r")?, procs.data_type()?, procs.endianness()?)?;
 //! bruker::scale(&mut spectrum, procs.scale()?);
 //! # Ok(())
 //! # }

@@ -15,5 +15,6 @@ thiserror = "1.0.64"
 
 [dev-dependencies]
 clap = { version = "4.5.20", features = ["derive"] }
+plotly = "0.10.0"
 tempfile = "3.13.0"
 zip = { version = "2.2.0", default-features = false }
