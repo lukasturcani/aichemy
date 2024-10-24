@@ -9,7 +9,14 @@ struct Cli {
     file: PathBuf,
 }
 
-fn main() -> Result<(), Box<dyn error::Error>> {
+fn main() {
+    if let Err(error) = run() {
+        eprintln!("{}", error);
+        std::process::exit(1);
+    }
+}
+
+fn run() -> Result<(), Box<dyn error::Error>> {
     let cli = Cli::parse();
     let content = fs::read(cli.file)?;
     let records = jcamp_dx::parse(&content);
